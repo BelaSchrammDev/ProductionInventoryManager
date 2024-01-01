@@ -886,16 +886,15 @@ namespace IngameScript
                 NumBluePrintToAssembler = 0;
                 CurrentItemAmount = amount;
                 if (MaximumItemAmount > 0) AssemblingDeltaAmount = MaximumItemAmount - amount;
-                else AssemblingDeltaAmount = 0;
+                else AssemblingDeltaAmount = -1;
             }
             public void CalcPriority()
             {
-                const int AssemblyPrioRange = 1000000;
-                const int AssemblyPrioRangeMinus = -AssemblyPrioRange;
-                if (MaximumItemAmount > 0) ItemPriority = (AssemblingDeltaAmount < -100 ? -100 : (AssemblingDeltaAmount > 100 ? 100 : AssemblingDeltaAmount)) * AssemblyPrioRange / MaximumItemAmount;
-                else ItemPriority = 0;
-                if (ItemPriority < AssemblyPrioRangeMinus) ItemPriority = AssemblyPrioRangeMinus;
-                else if (ItemPriority > AssemblyPrioRange) ItemPriority = AssemblyPrioRange;
+                if (AssemblingDeltaAmount <= 0) ItemPriority = 0;
+                else
+                {
+                    ItemPriority = 100 - (CurrentItemAmount * 100 / MaximumItemAmount);
+                }
             }
         }
         static List<View> viewList = new List<View>();
@@ -1068,6 +1067,15 @@ namespace IngameScript
             }
             return DebugText;
         }
+        string Debug_ComponentPrio()
+        {
+            var DebugText = "";
+            foreach (var item in bprints.Values)
+            {
+                DebugText += " ->" + item.AutoCraftingName + " / " + item.ItemPriority +"\n";
+            }
+            return DebugText;
+        }
 
         void debug()
         {
@@ -1075,8 +1083,7 @@ namespace IngameScript
             if (panel == null) return;
             if (panel.CubeGrid != Me.CubeGrid) return;
             var s = "";
-            s += Debug_AddIPrioLists();
-            s += Debug_RefineryBPs();
+            s += Debug_ComponentPrio();
             panel.WriteText(s + "\n" + debugString);
             debugString = "";
         }
@@ -1608,7 +1615,6 @@ namespace IngameScript
                             if (maxInstructions()) { writeInfo(); return; }
                             var b = bprints[s0[i]];
                             b.SetCurrentAmount((int)inventar.GetValueOrDefault(b.ItemName, 0));
-                            //b.SetCurrentAmount(inventar.ContainsKey(b.ItemName) ? (int)inventar[b.ItemName] : 0);
                             b.CalcPriority();
                             if (b.NeedsAssembling())
                             {
