@@ -669,7 +669,7 @@ namespace IngameScript
                     {
                         // schwellwert auswerten
                         var oldacf = AutocraftingThreshold;
-                        AutocraftingThreshold = getINT(acLines[1]);
+                        AutocraftingThreshold = getInteger(acLines[1]);
                         if (AutocraftingThreshold == 0) AutocraftingThreshold = 80;
                         if (oldacf != AutocraftingThreshold) act_new = true;
                     }
@@ -679,7 +679,7 @@ namespace IngameScript
                     }
                     else if (acLines.Count() == 6)
                     {
-                        if (bprints.ContainsKey(acLines[4])) bprints[acLines[4]].SetMaximumAmount(getIntegerWithKM(acLines[2]));
+                        if (bprints.ContainsKey(acLines[4])) bprints[acLines[4]].SetMaximumAmount(getIntegerWithPräfix(acLines[2]));
                     }
                 }
                 if (act_new) AssemblerBluePrint.SetAutocraftingThresholdNew();
@@ -1572,6 +1572,8 @@ namespace IngameScript
                         break;
                     case 45:
                         CalcIngotPrio();
+                        RenderAmmoPrioLCDS();
+                        RenderResourceProccesingLCD();
                         m1 = 0;
                         m0++;
                         break;
@@ -3088,76 +3090,6 @@ IG_Ingot + "Cabbage",
         void LoadOrePrioDefs()
         {
             var lcds = new List<IMyTextPanel>();
-            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(AmmoPrioDefinition));
-            if (lcds.Count != 0)
-            {
-                var lcd = lcds[0];
-                string[] pstr = lcd.GetText().Split('\n');
-                MultiAmmoGuns currentMultiGun = null;
-                foreach (var s in pstr)
-                {
-                    var line = s.Split(':', '=', '|');
-                    for (int i = 0; i < line.Count(); i++) { line[i] = line[i].Trim(' ', '\u00AD'); }
-                    if (line.Length == 0 || line[0].Length == 0 || line[0][0] == '/') continue;
-                    if (line.Length >= 3 && line[0] == "GunType")
-                    {
-                        currentMultiGun = multiAmmoGuns.GetValueOrDefault(line[2], null);
-                    }
-                    else if (line.Length >= 3 && currentMultiGun != null)
-                    {
-                        var adef = currentMultiGun.GetAmmoDefs(line[2]);
-                        if (adef != null)
-                        {
-                            adef.SetAmmoPriority(currentMultiGun.MultiAmmoGuntype, int.Parse(line[0]));
-                        }
-                    }
-                }
-                // Prio schreiben...
-                var ammoprioString = "/ Ammopriodefinitions:\n/ the prio only affects weapons that can use\n/ different ammunition types. this determines\n/ which one is loaded into the inventory first.\n/ 0 means that the ammunition is not used\n";
-                var headerString = "\n" + getDisplayBoxString("Priority", 25) + " | Ammotyp\n";
-                foreach (var mAmmoGuns in multiAmmoGuns)
-                {
-                    ammoprioString += linepur + "\nGunType: " + mAmmoGuns.Value.DisplayName + bigSpaces + "|" + mAmmoGuns.Value.MultiAmmoGuntype + headerString;
-                    AmmoDefs.SetCurrentSortGuntype(mAmmoGuns.Key);
-                    mAmmoGuns.Value.ammoDefs.Sort();
-                    foreach (var aDef in mAmmoGuns.Value.ammoDefs)
-                    {
-                        ammoprioString += getDisplayBoxStringDisplayNull(aDef.GetAmmoPriority(mAmmoGuns.Key), 25) + " | " + getDisplayBoxString(aDef.GetAmmoBluePrintAutocraftingName(), 60, true) + bigSpaces + " | " + aDef.type + "\n";
-                    }
-                }
-                lcd.Alignment = TextAlignment.LEFT;
-                lcd.ContentType = ContentType.TEXT_AND_IMAGE;
-                lcd.WriteText(ammoprioString);
-            }
-            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(ResourcenOverview));
-            if (lcds.Count != 0)
-            {
-                RefineryBlueprint.FillInputOutputAmountAndETA(); // ToDo: nicht bei jedem cycle berechnen!!!
-                var lcd = lcds[0];
-                var oresList = "                               Refiningprogress:\n" + line2lineonly + "\n";
-                foreach (var bluePrint in refineryBlueprints) // ToDo: Stone to Gravel doppelt!
-                {
-                    if (bluePrint.RefineryCount > 0)
-                    {
-                        oresList
-                            += getDisplayBoxString(bluePrint.Name, 70, true)
-                            + " | "
-                            + getDisplayBoxString(bluePrint.InputIDName, bluePrint.InputAmount, 70)
-                            + "\n"
-                            + getDisplayBoxString(bluePrint.RefineryCount.ToString() + " Refinerys.", 30, true)
-                            + getDisplayBoxString("-> " + bluePrint.etaString, 40, true)
-                            + " | "
-                            + getDisplayBoxString(bluePrint.OutputIDName, bluePrint.OutputAmount, 70)
-                            + "\n"
-                            + line2lineonly
-                            + "\n";
-
-                    }
-                }
-                lcd.Alignment = TextAlignment.LEFT;
-                lcd.ContentType = ContentType.TEXT_AND_IMAGE;
-                lcd.WriteText(oresList);
-            }
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(OrePrioDefString));
             if (lcds.Count > 0) // ToDo: mehrere LCDs, einlesen und ausgeben trennen
             {
@@ -3263,6 +3195,84 @@ IG_Ingot + "Cabbage",
 
             }
         }
+        void RenderAmmoPrioLCDS()
+        {
+            var lcds = new List<IMyTextPanel>();
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(AmmoPrioDefinition));
+            if (lcds.Count != 0)
+            {
+                var lcd = lcds[0];
+                string[] pstr = lcd.GetText().Split('\n');
+                MultiAmmoGuns currentMultiGun = null;
+                foreach (var s in pstr)
+                {
+                    var line = s.Split(':', '=', '|');
+                    for (int i = 0; i < line.Count(); i++) { line[i] = line[i].Trim(' ', '\u00AD'); }
+                    if (line.Length == 0 || line[0].Length == 0 || line[0][0] == '/') continue;
+                    if (line.Length >= 3 && line[0] == "GunType")
+                    {
+                        currentMultiGun = multiAmmoGuns.GetValueOrDefault(line[2], null);
+                    }
+                    else if (line.Length >= 3 && currentMultiGun != null)
+                    {
+                        var adef = currentMultiGun.GetAmmoDefs(line[2]);
+                        if (adef != null)
+                        {
+                            adef.SetAmmoPriority(currentMultiGun.MultiAmmoGuntype, int.Parse(line[0]));
+                        }
+                    }
+                }
+                // Prio schreiben...
+                var ammoprioString = "/ Ammopriodefinitions:\n/ the prio only affects weapons that can use\n/ different ammunition types. this determines\n/ which one is loaded into the inventory first.\n/ 0 means that the ammunition is not used\n";
+                var headerString = "\n" + getDisplayBoxString("Priority", 25) + " | Ammotyp\n";
+                foreach (var mAmmoGuns in multiAmmoGuns)
+                {
+                    ammoprioString += linepur + "\nGunType: " + mAmmoGuns.Value.DisplayName + bigSpaces + "|" + mAmmoGuns.Value.MultiAmmoGuntype + headerString;
+                    AmmoDefs.SetCurrentSortGuntype(mAmmoGuns.Key);
+                    mAmmoGuns.Value.ammoDefs.Sort();
+                    foreach (var aDef in mAmmoGuns.Value.ammoDefs)
+                    {
+                        ammoprioString += getDisplayBoxStringDisplayNull(aDef.GetAmmoPriority(mAmmoGuns.Key), 25) + " | " + getDisplayBoxString(aDef.GetAmmoBluePrintAutocraftingName(), 60, true) + bigSpaces + " | " + aDef.type + "\n";
+                    }
+                }
+                lcd.Alignment = TextAlignment.LEFT;
+                lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+                lcd.WriteText(ammoprioString);
+            }
+        }
+        void RenderResourceProccesingLCD()
+        {
+            var lcds = new List<IMyTextPanel>();
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(ResourcenOverview));
+            if (lcds.Count != 0)
+            {
+                RefineryBlueprint.FillInputOutputAmountAndETA(); // ToDo: nicht bei jedem cycle berechnen!!!
+                var lcd = lcds[0];
+                var oresList = "                               Refiningprogress:\n" + line2lineonly + "\n";
+                foreach (var bluePrint in refineryBlueprints) // ToDo: Stone to Gravel doppelt!
+                {
+                    if (bluePrint.RefineryCount > 0)
+                    {
+                        oresList
+                            += getDisplayBoxString(bluePrint.Name, 70, true)
+                            + " | "
+                            + getDisplayBoxString(bluePrint.InputIDName, bluePrint.InputAmount, 70)
+                            + "\n"
+                            + getDisplayBoxString(bluePrint.RefineryCount.ToString() + " Refinerys.", 30, true)
+                            + getDisplayBoxString("-> " + bluePrint.etaString, 40, true)
+                            + " | "
+                            + getDisplayBoxString(bluePrint.OutputIDName, bluePrint.OutputAmount, 70)
+                            + "\n"
+                            + line2lineonly
+                            + "\n";
+
+                    }
+                }
+                lcd.Alignment = TextAlignment.LEFT;
+                lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+                lcd.WriteText(oresList);
+            }
+        }
         static Dictionary<string, string> ResourcesNameCastList = new Dictionary<string, string>
             {
                 { Ore.Stone, Resources.RStone },
@@ -3304,7 +3314,7 @@ IG_Ingot + "Cabbage",
                 IPrio.getPrio(ingotprio[reftype], type, true).setPrio(prio);
             }
         }
-        static int getIntegerWithKM(string cstr)
+        static int getIntegerWithPräfix(string cstr)
         {
             if (cstr == "") return 0;
             var cstrlist = cstr.Split(' ');
@@ -3318,7 +3328,7 @@ IG_Ingot + "Cabbage",
             }
             return (int)wr;
         }
-        static int getINT(string cstr) { float wr; float.TryParse(cstr.Trim().Split('.')[0], out wr); return (int)wr; }
+        static int getInteger(string cstr) { float wr; float.TryParse(cstr.Trim().Split('.')[0], out wr); return (int)wr; }
         static string ToArgStr(string qstr)
         {
             var zstr = "";
