@@ -17,6 +17,7 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
+using static IngameScript.Program;
 
 namespace IngameScript
 {
@@ -31,7 +32,7 @@ namespace IngameScript
         bool collect_all_Ingot = true;
         bool collect_all_Component = true;
         int stacking_cycle = 10;
-        ST MainLoopTimeSpan = new ST(3);
+        StopWatch MainLoopTimeSpan = new StopWatch(3);
         static int AutocraftingThreshold = 80;
         static string debugString = "";
         const int minIC = 300, maxIC = 5000;
@@ -41,6 +42,7 @@ namespace IngameScript
         static List<storageInventory> storageinvs = new List<storageInventory>();
         List<IMyRefinery> raff = new List<IMyRefinery>();
         List<IMyAssembler> ass = new List<IMyAssembler>();
+        List<Assembler> okumas = new List<Assembler>();
         List<IMyUserControllableGun> ugun = new List<IMyUserControllableGun>();
         List<IMyTerminalBlock> tbl = new List<IMyTerminalBlock>();
         List<string> collectAll_List = new List<string>();
@@ -929,18 +931,18 @@ namespace IngameScript
         }
         class Warning : View
         {
-            public enum WarningID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, Incinerator, RefineryNotSupportet }
-            public WarningID w_ID = WarningID.NONE;
+            public enum ID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, Incinerator, RefineryNotSupportet }
+            public ID w_ID = ID.NONE;
             public string subType = "";
-            public Warning(WarningID warn_ID, string isubtype = "") : base(ViewType.WARNING) { w_ID = warn_ID; subType = isubtype; }
+            public Warning(ID warn_ID, string isubtype = "") : base(ViewType.WARNING) { w_ID = warn_ID; subType = isubtype; }
             public override string getInfoText()
             {
                 switch (w_ID)
                 {
-                    case WarningID.RefineryNotSupportet: return "refinery '" + subType + "' not supported.";
-                    case WarningID.Incinerator: return "incinerator (IOmod) not supported.";
-                    case WarningID.CARGOUSEHEAVY: return "cargo with " + subType + " is heavy.";
-                    case WarningID.CARGOUSEFULL: return "cargo with " + subType + " is full !!!!!";
+                    case ID.RefineryNotSupportet: return "refinery '" + subType + "' not supported.";
+                    case ID.Incinerator: return "incinerator (IOmod) not supported.";
+                    case ID.CARGOUSEHEAVY: return "cargo with " + subType + " is heavy.";
+                    case ID.CARGOUSEFULL: return "cargo with " + subType + " is full !!!!!";
                 }
                 return "";
             }
@@ -970,11 +972,11 @@ namespace IngameScript
         {
             viewList.Add(new Info(warnungstext, zeit));
         }
-        static void setWarning(Warning.WarningID warnID, string subtype = "")
+        static void setWarning(Warning.ID warnID, string subtype = "")
         {
             if (getWarning(warnID, subtype) == null) viewList.Add(new Warning(warnID, subtype));
         }
-        static Warning getWarning(Warning.WarningID warnID, string subtype)
+        static Warning getWarning(Warning.ID warnID, string subtype)
         {
             foreach (var v in viewList)
             {
@@ -986,7 +988,7 @@ namespace IngameScript
             }
             return null;
         }
-        void clearWarning(Warning.WarningID warnID, string subtype)
+        void clearWarning(Warning.ID warnID, string subtype)
         {
             var w = getWarning(warnID, subtype);
             if (w != null) w.setOver();
@@ -1040,6 +1042,32 @@ namespace IngameScript
             if (collect_all_Component) collectAll_List.Add(IG_ + IG_Component);
             stack_type = stack_types[0];
         }
+        string Debug_RefineryBPs()
+        {
+            var DebugText = "Accepted BluePrints by Refinerysubtype\n";
+            foreach (var refSubType in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
+            {
+                DebugText += "SubType:" + refSubType + "\n";
+                foreach (var refBP in Refinery.refineryTypesAcceptedBlueprintsList[refSubType])
+                {
+                    DebugText += "bprint -> " + refBP.Name + "\n";
+                }
+            }
+            return DebugText;
+        }
+        string Debug_AddIPrioLists()
+        {
+            var DebugText = "";
+            foreach (var IPrioListKey in ingotprio.Keys)
+            {
+                DebugText += "IPrioList:" + IPrioListKey + "\n";
+                foreach (var ip in ingotprio[IPrioListKey])
+                {
+                    DebugText += "\t- " + ip.refineryBP.Definition_id + " % " + ip.prio + "\n";
+                }
+            }
+            return DebugText;
+        }
 
         void debug()
         {
@@ -1047,6 +1075,8 @@ namespace IngameScript
             if (panel == null) return;
             if (panel.CubeGrid != Me.CubeGrid) return;
             var s = "";
+            s += Debug_AddIPrioLists();
+            s += Debug_RefineryBPs();
             panel.WriteText(s + "\n" + debugString);
             debugString = "";
         }
@@ -1638,18 +1668,18 @@ namespace IngameScript
                             var cargoUseRatio = CargoUseList[c].GetCarcocapacityUseRatio();
                             if (cargoUseRatio >= 90)
                             {
-                                setWarning(Warning.WarningID.CARGOUSEHEAVY, c);
-                                clearWarning(Warning.WarningID.CARGOUSEFULL, c);
+                                setWarning(Warning.ID.CARGOUSEHEAVY, c);
+                                clearWarning(Warning.ID.CARGOUSEFULL, c);
                             }
                             else if (cargoUseRatio >= 99)
                             {
-                                setWarning(Warning.WarningID.CARGOUSEFULL, c);
-                                clearWarning(Warning.WarningID.CARGOUSEHEAVY, c);
+                                setWarning(Warning.ID.CARGOUSEFULL, c);
+                                clearWarning(Warning.ID.CARGOUSEHEAVY, c);
                             }
                             else
                             {
-                                clearWarning(Warning.WarningID.CARGOUSEHEAVY, c);
-                                clearWarning(Warning.WarningID.CARGOUSEFULL, c);
+                                clearWarning(Warning.ID.CARGOUSEHEAVY, c);
+                                clearWarning(Warning.ID.CARGOUSEFULL, c);
                             }
                         }
                         firstRun = false;
@@ -1772,11 +1802,7 @@ namespace IngameScript
                     foreach (var sx in ingotprio.Keys)
                     {
                         s += "@INGOTPRIOLIST;" + sx + "\n";
-                        foreach (var i in ingotprio[sx])
-                            if (i.initp > 0)
-                            {
-                                s += "@INGOTPRIO;" + i.refineryBP + ";" + i.initp + "\n";
-                            }
+                        foreach (var i in ingotprio[sx]) if (i.initp > 0) s += "@INGOTPRIO;" + i.refineryBP.OutputIDName + ";" + i.initp + "\n";
                     }
                     foreach (var c in CargoUseList.Values) s += "@CARGOUSE;" + c.type + ";" + c.Current + ";" + c.Maximum + "\n";
                     foreach (var b in bprints.Values)
@@ -1998,7 +2024,6 @@ IG_Ingot + "Cabbage",
             }
             return false;
         }
-        static List<Assembler> okumas = new List<Assembler>();
         public class Assembler : IComparable<Assembler>
         {
             int BlueprintCount = 0;
@@ -2299,7 +2324,6 @@ IG_Ingot + "Cabbage",
         //Ofen
         public class Refinery
         {
-            public enum RefineryRefreshType { Unknow, VanillaRefinery, WaterRecyclingSystem, HydroponicsFarm, Reprocessor, Incinerator, }
             static public string priobt = "";
             static public int cn = 0;
             public static Dictionary<string, List<RefineryBlueprint>> refineryTypesAcceptedBlueprintsList = new Dictionary<string, List<RefineryBlueprint>>();
@@ -2309,7 +2333,7 @@ IG_Ingot + "Cabbage",
                     if (refineryTypesAcceptedBlueprintsList.ContainsKey(a) && !priobt.Contains("@" + a))
                         refineryTypesAcceptedBlueprintsList.Remove(a);
             }
-
+            public enum RefineryRefreshType { Unknow, VanillaRefinery, WaterRecyclingSystem, HydroponicsFarm, Reprocessor, Incinerator, }
             IMyInventory InputInventory, OutputInventory;
             public Dictionary<string, float> InputInventoryItems = new Dictionary<string, float>();
             public RefineryTypeDefinitions typeid;
@@ -2318,8 +2342,8 @@ IG_Ingot + "Cabbage",
             public List<RefineryBlueprint> AcceptedBlueprints = null;
             public string BlockSubType = "";
             public int fertig;
-            RefineryBlueprint CurrentWorkOre = null;
-            RefineryBlueprint NextWorkOre = null;
+            RefineryBlueprint CurrentWorkBluePrint = null;
+            RefineryBlueprint NextWorkBluePrint = null;
             float CurrentWorkOreAmount = 0;
             float NexWorkOreAmount = 0;
             public class RefineryTypeDefinitions
@@ -2433,13 +2457,13 @@ IG_Ingot + "Cabbage",
                             else ClearInputInventoryIfControledByPIM();
                             break;
                         case RefineryRefreshType.VanillaRefinery:
+                            VanillaRefineryManager();
                             if (fertig > 80 || IfForceManagerExecuting()) OfenFuellen();
                             OreSort();
                             break;
                     }
                 }
             }
-            // ToDO: Meldung wenn was fehlt.
             bool IfIngredientsNotFilled(string[] ingredients)
             {
                 foreach (var s in ingredients) if (!(InputInventoryItems.ContainsKey(s) && InputInventoryItems[s] != 0)) return false;
@@ -2507,10 +2531,8 @@ IG_Ingot + "Cabbage",
                     SendItemByType(Ore.Ice, 1000, InputInventory);
                 }
             }
-            public void Refresh()
+            void AddRefineryCount()
             {
-                ClearInventoryList(InputInventoryItems);
-                AddToInventory(InputInventory, InputInventoryItems);
                 List<MyInventoryItem> inhalt = new List<MyInventoryItem>();
                 InputInventory.GetItems(inhalt);
                 if (inhalt.Count > 0)
@@ -2519,17 +2541,23 @@ IG_Ingot + "Cabbage",
                     var bluePrint = AcceptedBlueprints.Find(b => b.InputID == ore);
                     if (bluePrint != null) bluePrint.RefineryCount++;
                 }
+            }
+            public void Refresh()
+            {
+                ClearInventoryList(InputInventoryItems);
+                AddToInventory(InputInventory, InputInventoryItems);
+                AddRefineryCount();
                 AddToInventory(OutputInventory);
                 if (!pms.ParseArgs(RefineryBlock.CustomName, true)) return;
                 var type = typeid.GetTypeID();
                 if (type == RefineryRefreshType.Incinerator)
                 {
-                    setWarning(Warning.WarningID.Incinerator);
+                    setWarning(Warning.ID.Incinerator);
                     return;
                 }
                 if (typeid.IsUnknowType())
                 {
-                    setWarning(Warning.WarningID.RefineryNotSupportet, pms.Name);
+                    setWarning(Warning.ID.RefineryNotSupportet, pms.Name);
                     return;
                 }
                 if (typeid.IsVanillaManagment())
@@ -2594,12 +2622,12 @@ IG_Ingot + "Cabbage",
                         nwaf = (float)inhalt[1].Amount;
                     }
                 }
-                CurrentWorkOre = AcceptedBlueprints.Find(b => b.InputID == ws);
+                CurrentWorkBluePrint = AcceptedBlueprints.Find(b => b.InputID == ws);
                 CurrentWorkOreAmount = waf;
-                NextWorkOre = AcceptedBlueprints.Find(b => b.InputID == nws);
+                NextWorkBluePrint = AcceptedBlueprints.Find(b => b.InputID == nws);
                 NexWorkOreAmount = nwaf;
             }
-            public void OfenFuellen()
+            void OfenFuellen()
             {
                 bool gefuellt = false;
                 RefineryBlueprint newworkBP = null;
@@ -2613,18 +2641,15 @@ IG_Ingot + "Cabbage",
                     var types = newworkBP.InputID.Split(' ');
                     if (inventar.ContainsKey(newworkBP.InputID)) gefuellt = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
                     if (gefuellt) break;
-                    else
-                    {
-                        if (Erzklau(newworkBP)) gefuellt = true;
-                    }
+                    else if (Erzklau(newworkBP)) gefuellt = true;
                 }
-                if (gefuellt) setIngotPrio(ip, newworkBP, cn);
+                if (gefuellt) SetIngotPrio(ip, newworkBP, cn);
             }
             bool Erzklau(RefineryBlueprint blueprint)
             {
                 var oamount = 0f;
-                if (blueprint == CurrentWorkOre) oamount = CurrentWorkOreAmount;
-                else if (blueprint == NextWorkOre) oamount = NexWorkOreAmount;
+                if (blueprint == CurrentWorkBluePrint) oamount = CurrentWorkOreAmount;
+                else if (blueprint == NextWorkBluePrint) oamount = NexWorkOreAmount;
                 if (RefineryBlock.GetInventory(0).CurrentVolume.RawValue < 100)
                 {
                     foreach (Refinery o in oefen)
@@ -2647,7 +2672,7 @@ IG_Ingot + "Cabbage",
                 }
                 return false;
             }
-            public void OreSort()
+            void OreSort()
             {
                 if (!ingotprio.ContainsKey(BlockSubType)) return;
                 var rl = new List<MyInventoryItem>();
@@ -2696,19 +2721,33 @@ IG_Ingot + "Cabbage",
                 if (RefineryBlock.GetInventory(0).IsFull) return false;
                 return AcceptedBlueprints.Contains(ore);
             }
+            enum RefineryManagerState { NONE, CLEAR_INPUT, SWAP_ORES,};
+            RefineryManagerState RMS = RefineryManagerState.NONE;
+            void VanillaRefineryManager()
+            {
+                if (!ingotprio.ContainsKey(BlockSubType)) return;
+                RMS = RefineryManagerState.NONE;
+                var CurWBP_IPrio = ingotprio[BlockSubType].Find(ip => ip.refineryBP == CurrentWorkBluePrint);
+                var NextWBP_IPrio = ingotprio[BlockSubType].Find(ip => ip.refineryBP == NextWorkBluePrint);
+                //debugString += pms.Name + "\n";
+                //if (CurWBP_IPrio != null) debugString += "CurWBP_IPrio: " + CurWBP_IPrio.prio;
+                //if (NextWBP_IPrio != null) debugString += "NetxWBP_IPrio: " + NextWBP_IPrio.prio;
+                //debugString += "\n";
+            }
             public bool IfForceManagerExecuting()
             {
                 if (!ingotprio.ContainsKey(BlockSubType)) return false;
+                RMS = RefineryManagerState.NONE;
                 int wp100 = 0;
                 int op = 0;
                 foreach (IPrio p in ingotprio[BlockSubType])
                 {
-                    if (p.refineryBP == CurrentWorkOre || p.refineryBP == NextWorkOre) op = op < p.prio ? (int)(p.prio * 1.5) : op;
+                    if (p.refineryBP == CurrentWorkBluePrint || p.refineryBP == NextWorkBluePrint) op = op < p.prio ? (int)(p.prio * 1.5) : op;
                     else if (wp100 == 0 && Accept(p.refineryBP)) wp100 = p.prio;
                 }
                 return op < wp100 ? true : false;
             }
-            static void setIngotPrio(List<IPrio> ipl, RefineryBlueprint bp, int onum)
+            static void SetIngotPrio(List<IPrio> ipl, RefineryBlueprint bp, int onum)
             {
                 IPrio p = null;
                 if (ipl.Count > 0 && null != (p = IPrio.getPrio(ipl, bp)))
@@ -2734,9 +2773,9 @@ IG_Ingot + "Cabbage",
                 if (other.initp == initp) return 0;
                 return other.initp > initp ? 1 : -1;
             }
-            public IPrio(RefineryBlueprint bp, int pr = 0)
+            public IPrio(RefineryBlueprint bluePrint, int pr = 0)
             {
-                refineryBP = bp;
+                refineryBP = bluePrint;
                 prio = pr;
                 initp = pr;
             }
@@ -2807,11 +2846,11 @@ IG_Ingot + "Cabbage",
             public bool Control() { return smscontrol; }
         }
         //ST
-        public class ST
+        public class StopWatch
         {
             DateTime ls = DateTime.Now;
             int sec;
-            public ST(int isec = 5) { sec = isec; }
+            public StopWatch(int isec = 5) { sec = isec; }
             public bool IfTimeSpanReady(bool rs = true)
             {
                 if (sec == 0) return false;
@@ -3019,6 +3058,31 @@ IG_Ingot + "Cabbage",
         void CalcIngotPrio()
         {
             foreach (var pl in ingotprio.Values) foreach (IPrio ip in pl) ip.setPrio(0);
+            foreach (var refSubType in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
+            {
+                foreach (var refBluePrint in Refinery.refineryTypesAcceptedBlueprintsList[refSubType])
+                {
+                    var inputOre = refBluePrint.InputID;
+                    if (inventar.ContainsKey(inputOre) && inventar[inputOre] > 0)
+                    {
+                        if (refBluePrint.IsScrap) addPrio(refBluePrint, 9999);
+                        else
+                        {
+                            var oreamount = inventar[refBluePrint.InputID];
+                            var ingotamount = inventar[refBluePrint.OutputID];
+                            if (ingotamount == 0) addPrio(refBluePrint, 200);
+                            else if (ingotamount < 500) addPrio(refBluePrint, 150);
+                            else if (ingotamount < oreamount) addPrio(refBluePrint, 100 - (int)(ingotamount / (oreamount / 97.0f)));
+                            else addPrio(refBluePrint, 1);
+                        }
+                    }
+                }
+            }
+            LoadOrePrioDefs();
+        }
+        void oldCalcIngotPrio()
+        {
+            foreach (var pl in ingotprio.Values) foreach (IPrio ip in pl) ip.setPrio(0);
             var orepool = new Dictionary<RefineryBlueprint, float>();
             foreach (var refBP in refineryBlueprints)
             {
@@ -3040,6 +3104,7 @@ IG_Ingot + "Cabbage",
                 else addPrio(key, 90);
             }
             LoadOrePrioDefs();
+            // can be removed if different functions exist for the various refinery types.
             foreach (Refinery o in oefen)
             {
                 if (o.pms.Control() && ingotprio.ContainsKey(o.BlockSubType))
@@ -3270,6 +3335,14 @@ IG_Ingot + "Cabbage",
             if (prio == 0) prio = 1;
             foreach (var pl in ingotprio.Values) IPrio.getPrio(pl, type, true).setPrio(prio);
         }
+        void addPrioByReftype(string reftype, RefineryBlueprint type, int prio)
+        {
+            if (prio == 0) prio = 1;
+            if(ingotprio.ContainsKey(reftype))
+            {
+                IPrio.getPrio(ingotprio[reftype], type, true).setPrio(prio);
+            }
+        }
         static int getIntegerWithKM(string cstr)
         {
             if (cstr == "") return 0;
@@ -3285,50 +3358,6 @@ IG_Ingot + "Cabbage",
             return (int)wr;
         }
         static int getINT(string cstr) { float wr; float.TryParse(cstr.Trim().Split('.')[0], out wr); return (int)wr; }
-        string Tag2Ingame(string ststr)
-        {
-            if (ststr.Contains("Dock")) return "";
-            switch (ststr)
-            {
-                case "Deuterium": return Ingot.DeuteriumContainer;
-                case "Ice": return Ore.Ice;
-                case "Water": return Ingot.WaterFood;
-                case "Greywater": return Ingot.GreyWater;
-                case "Organic": return Ore.Organic;
-                case "Stone": return Ore.Stone;
-                case "Gravel": return Ingot.Stone;
-                case "Tools": return IG_Tools;
-                case "Kits": return IG_Kits;
-                case "Cash": return IG_Cash;
-                case "Datapads": return IG_Datas;
-                case "H-Bottles": return IG_HBottles;
-                case "O-Bottles": return IG_OBottles;
-                case "Ammo": return IG_Ammo;
-                case "Steelplate": return IG_Com + "SteelPlate";
-                case "Metalgrid": return IG_Com + "MetalGrid";
-                case "Interiorplate": return IG_Com + "InteriorPlate";
-                case "Smalltube": return IG_Com + "SmallTube";
-                case "Largetube": return IG_Com + "LargeTube";
-                case "Glass": return IG_Com + "BulletproofGlass";
-                case "Gravity": return IG_Com + "GravityGenerator";
-                case "Radio": return IG_Com + "RadioCommunication";
-                case "Solar": return IG_Com + "SolarCell";
-                case "Power": return IG_Com + "PowerCell";
-                case "Zonechip": return IG_Com + "ZoneChip";
-                case "Reactor":
-                case "Thrust":
-                case "Medical":
-                case "Detector":
-                case "Explosives":
-                case "Construction":
-                case "Motor":
-                case "Display":
-                case "Girder":
-                case "Computer":
-                case "Canvas": return IG_Com + ststr;
-                default: return ststr;
-            }
-        }
         static string ToArgStr(string qstr)
         {
             var zstr = "";
@@ -3357,7 +3386,7 @@ IG_Ingot + "Cabbage",
         string getRunningSign()
         {
             var w = "|";
-            r = r + rc;
+            r += rc;
             if (r < 0)
             {
                 r = 1;
@@ -3780,6 +3809,51 @@ IG_Ingot + "Cabbage",
 
             curmod = "";
         }
+        string Tag2Ingame(string ststr)
+        {
+            if (ststr.Contains("Dock")) return "";
+            switch (ststr)
+            {
+                case "Deuterium": return Ingot.DeuteriumContainer;
+                case "Ice": return Ore.Ice;
+                case "Water": return Ingot.WaterFood;
+                case "Greywater": return Ingot.GreyWater;
+                case "Organic": return Ore.Organic;
+                case "Stone": return Ore.Stone;
+                case "Gravel": return Ingot.Stone;
+                case "Tools": return IG_Tools;
+                case "Kits": return IG_Kits;
+                case "Cash": return IG_Cash;
+                case "Datapads": return IG_Datas;
+                case "H-Bottles": return IG_HBottles;
+                case "O-Bottles": return IG_OBottles;
+                case "Ammo": return IG_Ammo;
+                case "Steelplate": return IG_Com + "SteelPlate";
+                case "Metalgrid": return IG_Com + "MetalGrid";
+                case "Interiorplate": return IG_Com + "InteriorPlate";
+                case "Smalltube": return IG_Com + "SmallTube";
+                case "Largetube": return IG_Com + "LargeTube";
+                case "Glass": return IG_Com + "BulletproofGlass";
+                case "Gravity": return IG_Com + "GravityGenerator";
+                case "Radio": return IG_Com + "RadioCommunication";
+                case "Solar": return IG_Com + "SolarCell";
+                case "Power": return IG_Com + "PowerCell";
+                case "Zonechip": return IG_Com + "ZoneChip";
+                case "Reactor":
+                case "Thrust":
+                case "Medical":
+                case "Detector":
+                case "Explosives":
+                case "Construction":
+                case "Motor":
+                case "Display":
+                case "Girder":
+                case "Computer":
+                case "Canvas": return IG_Com + ststr;
+                default: return ststr;
+            }
+        }
+
         public class Resources
         {
             public const string RPowder = "powder";
