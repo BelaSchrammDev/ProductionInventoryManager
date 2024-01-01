@@ -3065,54 +3065,20 @@ IG_Ingot + "Cabbage",
                     var inputOre = refBluePrint.InputID;
                     if (inventar.ContainsKey(inputOre) && inventar[inputOre] > 0)
                     {
-                        if (refBluePrint.IsScrap) addPrio(refBluePrint, 9999);
+                        if (refBluePrint.IsScrap) addPrio(refSubType, refBluePrint, 9999);
                         else
                         {
                             var oreamount = inventar[refBluePrint.InputID];
                             var ingotamount = inventar[refBluePrint.OutputID];
-                            if (ingotamount == 0) addPrio(refBluePrint, 200);
-                            else if (ingotamount < 500) addPrio(refBluePrint, 150);
-                            else if (ingotamount < oreamount) addPrio(refBluePrint, 100 - (int)(ingotamount / (oreamount / 97.0f)));
-                            else addPrio(refBluePrint, 1);
+                            if (ingotamount == 0) addPrio(refSubType, refBluePrint, 200);
+                            else if (ingotamount < 500) addPrio(refSubType, refBluePrint, 150);
+                            else if (ingotamount < oreamount) addPrio(refSubType, refBluePrint, 100 - (int)(ingotamount / (oreamount / 97.0f)));
+                            else addPrio(refSubType, refBluePrint, 1);
                         }
                     }
                 }
             }
             LoadOrePrioDefs();
-        }
-        void oldCalcIngotPrio()
-        {
-            foreach (var pl in ingotprio.Values) foreach (IPrio ip in pl) ip.setPrio(0);
-            var orepool = new Dictionary<RefineryBlueprint, float>();
-            foreach (var refBP in refineryBlueprints)
-            {
-                var ore = refBP.InputID;
-                if (inventar.ContainsKey(ore) && inventar[ore] > 0) orepool.Add(refBP, inventar[ore]);
-            }
-            foreach (var key in orepool.Keys)
-            {
-                if (key.IsScrap) addPrio(key, 9999);
-                else if (refineryBlueprints.Contains(key) && inventar.ContainsKey(key.InputID))
-                {
-                    var oreamount = orepool[key];
-                    var ingotamount = inventar[key.InputID];
-                    if (ingotamount == 0) addPrio(key, 200);
-                    else if (ingotamount < 500) addPrio(key, 150);
-                    else if (ingotamount < oreamount) addPrio(key, 100 - (int)(ingotamount / (oreamount / 97.0f)));
-                    else addPrio(key, 1);
-                }
-                else addPrio(key, 90);
-            }
-            LoadOrePrioDefs();
-            // can be removed if different functions exist for the various refinery types.
-            foreach (Refinery o in oefen)
-            {
-                if (o.pms.Control() && ingotprio.ContainsKey(o.BlockSubType))
-                {
-                    foreach (IPrio ip in ingotprio[o.BlockSubType]) if (!o.Accept(ip.refineryBP)) ip.setPrio(0);
-                }
-            }
-            foreach (List<IPrio> pl in ingotprio.Values) pl.Sort();
         }
         static Dictionary<string, Dictionary<RefineryBlueprint, int>> orePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
         const string OrePrioDefString = "(sms,oreprio)";
@@ -3330,12 +3296,7 @@ IG_Ingot + "Cabbage",
         const string line2 = "\n" + line2pur + "\n";
         const string line2pur = "/" + line2lineonly;
         const string line2lineonly = "-------------------------------------------------------------------------------------------";
-        void addPrio(RefineryBlueprint type, int prio)
-        {
-            if (prio == 0) prio = 1;
-            foreach (var pl in ingotprio.Values) IPrio.getPrio(pl, type, true).setPrio(prio);
-        }
-        void addPrioByReftype(string reftype, RefineryBlueprint type, int prio)
+        void addPrio(string reftype, RefineryBlueprint type, int prio)
         {
             if (prio == 0) prio = 1;
             if(ingotprio.ContainsKey(reftype))
