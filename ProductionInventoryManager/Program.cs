@@ -667,7 +667,7 @@ namespace IngameScript
                     }
                     else if (acLines[0] == X_Autocrafting_treshold)
                     {
-                        // schwellwert auswerten
+                        // threshold loading
                         var oldacf = AutocraftingThreshold;
                         AutocraftingThreshold = getInteger(acLines[1]);
                         if (AutocraftingThreshold == 0) AutocraftingThreshold = 80;
@@ -683,7 +683,7 @@ namespace IngameScript
                     }
                 }
                 if (act_new) AssemblerBluePrint.SetAutocraftingThresholdNew();
-                // autocrafting config schreiben
+                // write autocrafting config
                 var acString = "/ Autocraftingdefinition:\n";
                 acString += "/ add '...(sms)' to the name of assemblers to crafting their items,\n/ and set the max quantity as you want\n\n";
                 acString += "/ if the quantity of items falls below this percentage value,\n/ then it will be increased to max.\n" + X_Autocrafting_treshold + " = " + AutocraftingThreshold + "%\n\n";
@@ -762,6 +762,7 @@ namespace IngameScript
             if (curmod != "Vanilla" && (usedMods.ContainsKey(curmod) ? !usedMods[curmod] : true)) return;
             MyDefinitionId id;
             if (!MyDefinitionId.TryParse("MyObjectBuilder_BlueprintDefinition/" + subtypeID, out id)) return;
+            if (subtypeID.StartsWith("Position0")) subtypeID = subtypeID.Substring(subtypeID.IndexOf('_') + 1);
             if (!mods.Contains(curmod)) mods.Add(curmod);
             var bpi = typeID + " " + subtypeID;
             if (!bprints_pool.ContainsKey(bpi)) bprints_pool.Add(bpi, new AssemblerBluePrint(typeID, subtypeID, curmod, (itemName == "" ? "" : typeID + " " + itemName), alternativItemName, id));
@@ -1072,7 +1073,7 @@ namespace IngameScript
             var DebugText = "";
             foreach (var item in bprints.Values)
             {
-                DebugText += " ->" + item.AutoCraftingName + " / " + item.ItemPriority +"\n";
+                DebugText += " # " + item.AutoCraftingName + " -> " + item.ItemPriority +"\n";
             }
             return DebugText;
         }
@@ -1219,7 +1220,6 @@ namespace IngameScript
                         }
                         m0++;
                         break;
-                    // find Weapons
                     case 10:
                         var group = GridTerminalSystem.GetBlockGroupWithName(gungroupName);
                         if (group == null)
@@ -1833,72 +1833,72 @@ namespace IngameScript
         }
 
         static string[] waste_cast = new string[]{
-Ore.Organic,
-Ingot.GreyWater};
+                Ore.Organic,
+                Ingot.GreyWater};
 
         static string[] food_cast = new string[]
         {
-// Daily Needs Survival
-Ingot.WaterFood,
-Ingot.CleanWater,
-Ingot.SubFresh,
-Ingot.Nutrients,
-IG_Ingot + "ArtificialFood",
-IG_Ingot + "LuxuryMeal",
-IG_Ingot + "SabiroidSteak",
-IG_Ingot + "VeganFood",
-IG_Ingot + "WolfSteak",
-IG_Ingot + "WolfBouillon",
-IG_Ingot + "SabiroidBouillon",
-IG_Ingot + "CoffeeFood",
-IG_Ingot + "Potatoes",
-IG_Ingot + "Tomatoes",
-IG_Ingot + "Carrots",
-IG_Ingot + "Cucumbers",
-IG_Ingot + "PotatoSeeds",
-IG_Ingot + "TomatoSeeds",
-IG_Ingot + "CarrotSeeds",
-IG_Ingot + "CucumberSeeds",
-IG_Ingot + "Ketchup",
-IG_Ingot + "MartianSpecial",
-"Ore WolfMeat",
-"Ore SabiroidMeat",
-IG_Ingot + "Fertilizer",
-IG_Ingot + "NotBeefBurger",
-IG_Ingot + "ToFurkey",
-IG_Ingot + "SpaceMealBar",
-IG_Ingot + "HotChocolate",
-IG_Ingot + "SpacersBreakfast",
-IG_Ingot + "ProteinShake",
-IG_Ingot + "EmergencyFood",
-// Eat, Drink, Sleep & Repeat
-IG_Kits + " SparklingWater",
-IG_Kits + " Emergency_Ration",
-IG_Kits + " AppleJuice",
-IG_Kits + " ApplePie",
-IG_Kits + " Tofu",
-IG_Kits + " MeatRoasted",
-IG_Kits + " ShroomSteak",
-IG_Kits + " Bread",
-IG_Kits + " Burger",
-IG_Kits + " Soup",
-IG_Kits + " MushroomSoup",
-IG_Kits + " TofuSoup",
-IG_Kits + " EuropaTea",
-IG_Kits + " Mushrooms",
-IG_Kits + " Apple",
-IG_Kits + " PrlnglesChips",
-IG_Kits + " LaysChips",
-IG_Kits + " InterBeer",
-IG_Kits + " CosmicCoffee",
-IG_Kits + " ClangCola",
-IG_Kits + " Meat",
-IG_Kits + " MeatRoasted",
-IG_Ingot + "Soya",
-IG_Ingot + "Herbs",
-IG_Ingot + "Wheat",
-IG_Ingot + "Pumpkin",
-IG_Ingot + "Cabbage",
+                // Daily Needs Survival
+                Ingot.WaterFood,
+                Ingot.CleanWater,
+                Ingot.SubFresh,
+                Ingot.Nutrients,
+                IG_Ingot + "ArtificialFood",
+                IG_Ingot + "LuxuryMeal",
+                IG_Ingot + "SabiroidSteak",
+                IG_Ingot + "VeganFood",
+                IG_Ingot + "WolfSteak",
+                IG_Ingot + "WolfBouillon",
+                IG_Ingot + "SabiroidBouillon",
+                IG_Ingot + "CoffeeFood",
+                IG_Ingot + "Potatoes",
+                IG_Ingot + "Tomatoes",
+                IG_Ingot + "Carrots",
+                IG_Ingot + "Cucumbers",
+                IG_Ingot + "PotatoSeeds",
+                IG_Ingot + "TomatoSeeds",
+                IG_Ingot + "CarrotSeeds",
+                IG_Ingot + "CucumberSeeds",
+                IG_Ingot + "Ketchup",
+                IG_Ingot + "MartianSpecial",
+                "Ore WolfMeat",
+                "Ore SabiroidMeat",
+                IG_Ingot + "Fertilizer",
+                IG_Ingot + "NotBeefBurger",
+                IG_Ingot + "ToFurkey",
+                IG_Ingot + "SpaceMealBar",
+                IG_Ingot + "HotChocolate",
+                IG_Ingot + "SpacersBreakfast",
+                IG_Ingot + "ProteinShake",
+                IG_Ingot + "EmergencyFood",
+                // Eat, Drink, Sleep & Repeat
+                IG_Kits + " SparklingWater",
+                IG_Kits + " Emergency_Ration",
+                IG_Kits + " AppleJuice",
+                IG_Kits + " ApplePie",
+                IG_Kits + " Tofu",
+                IG_Kits + " MeatRoasted",
+                IG_Kits + " ShroomSteak",
+                IG_Kits + " Bread",
+                IG_Kits + " Burger",
+                IG_Kits + " Soup",
+                IG_Kits + " MushroomSoup",
+                IG_Kits + " TofuSoup",
+                IG_Kits + " EuropaTea",
+                IG_Kits + " Mushrooms",
+                IG_Kits + " Apple",
+                IG_Kits + " PrlnglesChips",
+                IG_Kits + " LaysChips",
+                IG_Kits + " InterBeer",
+                IG_Kits + " CosmicCoffee",
+                IG_Kits + " ClangCola",
+                IG_Kits + " Meat",
+                IG_Kits + " MeatRoasted",
+                IG_Ingot + "Soya",
+                IG_Ingot + "Herbs",
+                IG_Ingot + "Wheat",
+                IG_Ingot + "Pumpkin",
+                IG_Ingot + "Cabbage",
         };
 
         static string TypeCast(string t)
@@ -1908,8 +1908,6 @@ IG_Ingot + "Cabbage",
             if (waste_cast.Contains(t)) return "Waste";
             return "";
         }
-
-        // Inventar verteilen
         static void ClearInventory(IMyInventory quelle, List<string> typeID_l = null)
         {
             var von = new List<MyInventoryItem>();
@@ -1999,7 +1997,6 @@ IG_Ingot + "Cabbage",
         }
         static bool SendItemByType(string iType, float itemAmount, IMyInventory ziel, int? p = null)
         {
-            // PRG.Echo("sendItemByType: " + iType + "/" + itemAmount);
             return SendItemByTypeAndSubtype(IG_ + iType.Substring(0, iType.IndexOf(' ')), iType.Substring(iType.IndexOf(' ') + 1), itemAmount, ziel);
         }
         static bool SendItemByTypeAndSubtype(string itemType, string itemSubType, float itemAmount, IMyInventory ziel, int? p = null)
