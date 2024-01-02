@@ -832,6 +832,7 @@ namespace IngameScript
                     return;
                 }
                 AutoCraftingName = ItemName.Split(' ')[1];
+                if (AutoCraftingName.StartsWith("Position")) AutoCraftingName = AutoCraftingName.Substring(AutoCraftingName.IndexOf('_') + 1);
                 if (AutoCraftingName.StartsWith("K_HSR_")) AutoCraftingName = AutoCraftingName.Substring(6);
                 else if (AutoCraftingName.Contains(AutomaticRifleGun_Mag_))
                 {
@@ -3405,7 +3406,7 @@ namespace IngameScript
             if (!usedMods[M_IndustrialOverhaulMod])
             {
                 // blueprint vanilla
-                // components
+                // Components
                 C("ConstructionComponent");
                 C("GirderComponent");
                 C("MetalGrid");
@@ -3423,59 +3424,63 @@ namespace IngameScript
                 C("MedicalComponent");
                 C("RadioCommunicationComponent");
                 C("DetectorComponent");
-                C("Canvas");
                 C("ExplosivesComponent");
                 C("SolarCell");
                 C("PowerCell");
                 C("Superconductor");
-
-                D("Datapad");
-
-                // ammo
-                A("NATO_25x184mmMagazine");
-                A("Missile200mm");
-                A("SemiAutoPistolMagazine");
-                A("FullAutoPistolMagazine");
-                A("ElitePistolMagazine");
-                A("AutomaticRifleGun_Mag_20rd");
-                A("RapidFireAutomaticRifleGun_Mag_50rd");
-                A("PreciseAutomaticRifleGun_Mag_5rd");
-                A("UltimateAutomaticRifleGun_Mag_30rd");
-
-                // tools and wapons
-                T("Welder");
-                T("Welder2");
-                T("Welder3");
-                T("Welder4");
-                T("AngleGrinder");
-                T("AngleGrinder2");
-                T("AngleGrinder3");
-                T("AngleGrinder4");
-                T("HandDrill");
-                T("HandDrill2");
-                T("HandDrill3");
-                T("HandDrill4");
-                T("AutomaticRifle");
-                T("PreciseAutomaticRifle");
-                T("RapidFireAutomaticRifle");
-                T("UltimateAutomaticRifle");
-                T("BasicHandHeldLauncher");
-                T("AdvancedHandHeldLauncher");
-                T("SemiAutoPistol");
-                T("FullAutoPistol");
-                T("EliteAutoPistol");
-
-                // bottles
-                H("HydrogenBottle");
-                O("OxygenBottle");
+                // Equipment
+                O("Position0010_OxygenBottle");
+                H("Position0020_HydrogenBottle");
+                C("Position0030_Canvas");
+                D("Position0040_Datapad");
+                T("Position0005_FlareGun");
+                A("Position0005_FlareGunMagazine");
+                A("Position0007_FireworksBoxBlue");
+                A("Position00071_FireworksBoxGreen");
+                A("Position00072_FireworksBoxRed");
+                A("Position00073_FireworksBoxYellow");
+                A("Position00074_FireworksBoxPink");
+                A("Position00075_FireworksBoxRainbow");
+                // Tools
+                T("Position0010_AngleGrinder");
+                T("Position0020_AngleGrinder2");
+                T("Position0030_AngleGrinder3");
+                T("Position0040_AngleGrinder4");
+                T("Position0050_HandDrill");
+                T("Position0060_HandDrill2");
+                T("Position0070_HandDrill3");
+                T("Position0080_HandDrill4");
+                T("Position0090_Welder");
+                T("Position0100_Welder2");
+                T("Position0110_Welder3");
+                T("Position0120_Welder4");
+                // Weapons
+                T("Position0010_SemiAutoPistol");
+                T("Position0020_FullAutoPistol");
+                T("Position0030_EliteAutoPistol");
+                T("Position0040_AutomaticRifle");
+                T("Position0050_RapidFireAutomaticRifle");
+                T("Position0060_PreciseAutomaticRifle");
+                T("Position0070_UltimateAutomaticRifle");
+                T("Position0080_BasicHandHeldLauncher");
+                T("Position0090_AdvancedHandHeldLauncher");
+                // Ammo
+                A("Position0010_SemiAutoPistolMagazine");
+                A("Position0020_FullAutoPistolMagazine");
+                A("Position0030_ElitePistolMagazine");
+                A("Position0040_AutomaticRifleGun_Mag_20rd");
+                A("Position0050_RapidFireAutomaticRifleGun_Mag_50rd");
+                A("Position0060_PreciseAutomaticRifleGun_Mag_5rd");
+                A("Position0080_NATO_25x184mmMagazine");
+                A("Position0070_UltimateAutomaticRifleGun_Mag_30rd");
+                A("Position0090_AutocannonClip");
+                A("Position0100_Missile200mm");
+                A("Position0110_MediumCalibreAmmo");
+                A("Position0120_LargeCalibreAmmo");
+                A("Position0130_SmallRailgunAmmo");
+                A("Position0140_LargeRailgunAmmo");
             }
 
-            // ammo
-            A("AutocannonClip");
-            A("LargeCalibreAmmo");
-            A("MediumCalibreAmmo");
-            A("LargeRailgunAmmo");
-            A("SmallRailgunAmmo");
 
             /* DailyNeedsSurvivalMod */
             curmod = M_DailyNeedsSurvival;
