@@ -2883,7 +2883,7 @@ namespace IngameScript
                         else
                         {
                             var oreamount = inventar[refBluePrint.InputID];
-                            var ingotamount = inventar[refBluePrint.OutputID];
+                            var ingotamount = inventar.GetValueOrDefault(refBluePrint.OutputID,0);
                             if (ingotamount == 0) addPrio(refSubType, refBluePrint, 200);
                             else if (ingotamount < 500) addPrio(refSubType, refBluePrint, 150);
                             else if (ingotamount < oreamount) addPrio(refSubType, refBluePrint, 100 - (int)(ingotamount / (oreamount / 97.0f)));
@@ -3056,10 +3056,9 @@ namespace IngameScript
         {
             var lcds = new List<IMyTextPanel>();
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(ResourcenOverview));
-            if (lcds.Count != 0)
+            if (lcds.Count > 0)
             {
                 RefineryBlueprint.FillInputOutputAmountAndETA(); // ToDo: nicht bei jedem cycle berechnen!!!
-                var lcd = lcds[0];
                 var oresList = "                               Refiningprogress:\n" + line2lineonly + "\n";
                 foreach (var bluePrint in refineryBlueprints) // ToDo: Stone to Gravel doppelt!
                 {
@@ -3080,9 +3079,12 @@ namespace IngameScript
 
                     }
                 }
-                lcd.Alignment = TextAlignment.LEFT;
-                lcd.ContentType = ContentType.TEXT_AND_IMAGE;
-                lcd.WriteText(oresList);
+                foreach (var lcd in lcds)
+                {
+                    lcd.Alignment = TextAlignment.LEFT;
+                    lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+                    lcd.WriteText(oresList);
+                }
             }
         }
         static Dictionary<string, string> ResourcesNameCastList = new Dictionary<string, string>

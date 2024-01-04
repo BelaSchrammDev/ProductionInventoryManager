@@ -9,7 +9,7 @@ the configuration is located in the customdata.
 new in update 1.1a:
 
  - rewrite of the refinery control, for the IndustrialOverhaul Mod
- - refining overview on a LCD is possible, name of LCD must contain '(sms,refining)'.
+ - refining overview on LCDs is possible, name of the LCDs must contain '(sms,refining)'.
  - autocraftingconfig now via LCD Display, place a LCD and add '(sms,autocrafting)' to the name.
      follow the instructions, multiple autocrafting lcds are possible
  - ammoprioconfig of multiammoguns now via LCD, place a LCD and add '(sms,ammoprio)' to the name.

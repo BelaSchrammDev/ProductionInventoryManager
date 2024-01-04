@@ -158,10 +158,7 @@ namespace IngameScript
             public void CalcPriority()
             {
                 if (AssemblingDeltaAmount <= 0) ItemPriority = 0;
-                else
-                {
-                    ItemPriority = 100 - (CurrentItemAmount * 100 / MaximumItemAmount);
-                }
+                else ItemPriority = 100 - (CurrentItemAmount * 100 / MaximumItemAmount);
             }
         }
     }
