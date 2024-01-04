@@ -133,7 +133,7 @@ namespace IngameScript
                 subtype = iSubTypeID;
                 BlueprintID = type + " " + subtype;
                 definition_id = definitionId;
-                ItemName = alter == "" ? BluePrintNameToItemName(type, definition_id.SubtypeName) : alter;
+                ItemName = alter == "" ? BluePrintNameToItemName(type, subtype) : alter;
                 ModName = modName;
                 ConvertAutoCraftingName();
                 SetMaximumAmount(0);
