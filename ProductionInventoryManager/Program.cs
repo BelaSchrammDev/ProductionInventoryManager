@@ -601,8 +601,31 @@ namespace IngameScript
             configstr += "\n" + X_Config_end + "\n";
             Me.CustomData = configstr;
         }
-        void loadConfig()
+        void LoadConfig()
         {
+
+            string[] modInitList =
+            {
+                M_DailyNeedsSurvival,
+                M_AzimuthThruster,
+                M_SG_Gates,
+                M_SG_Ores,
+                M_PaintGun,
+                M_DeuteriumReactor,
+                M_Shield,
+                M_RailGun,
+                M_HomingWeaponry,
+                M_IndustrialOverhaulMod,
+                M_IndustrialOverhaulLLMod,
+                M_IndustrialOverhaulWaterMod,
+                M_EatDrinkSleep,
+                M_PlantCook,
+                M_AryxEpsteinDrive,
+                M_NorthWindWeapons,
+                M_HSR,
+            };
+            foreach (var m in modInitList) usedMods.Add(m, false);
+
             bool config = false;
             foreach (var s1 in Me.CustomData.Split('\n'))
             {
@@ -889,8 +912,8 @@ namespace IngameScript
         {
             viewList.Add(new AmmoManagerInfo());
             viewList.Add(new StorageManagerInfo());
-            RefineryBlueprint.InitScrapTypeBlueprintTypes();
-            loadItemDefinitionen();
+            LoadConfig();
+            InitAssemblerBluePrints();
             InitRefineryBlueprints();
             MAXIC = minIC;
             rti = Runtime;
@@ -2846,79 +2869,6 @@ namespace IngameScript
                 AddRefineryBlueprint(bpNamePrefix + bp + bpNameSuffix, inputNamePrefix + bp, outputNamePrefix + bp);
             }
         }
-        void InitRefineryBlueprints()
-        {
-            // Ingots
-            AddRefineryBlueprint("StoneOreToIngotBasic", Ore.Stone, Ingot.Stone);
-            AddRefineryBlueprint("ScrapToIronIngot", Ore.Scrap, Ingot.Iron);
-            AddRefineryBlueprint("ScrapIngotToIronIngot", Ingot.Scrap, Ingot.Iron);
-            AddRefineryBlueprintOreToIngot("Gold");
-            AddRefineryBlueprintOreToIngot("Platinum");
-            AddRefineryBlueprintOreToIngot("Stone");
-            AddRefineryBlueprintOreToIngot("Silver");
-            AddRefineryBlueprintOreToIngot("Iron");
-            AddRefineryBlueprintOreToIngot("Nickel");
-            AddRefineryBlueprintOreToIngot("Cobalt");
-            AddRefineryBlueprintOreToIngot("Silicon");
-            AddRefineryBlueprintOreToIngot("Uranium");
-            if (usedMods[M_DeuteriumReactor])
-            {
-                AddRefineryBlueprint("StonetoDeuterium", Ore.Stone, Ingot.DeuteriumContainer);
-                AddRefineryBlueprint("IcetoDeuterium", Ore.Ice, Ingot.DeuteriumContainer);
-                AddRefineryBlueprint("DeuteriumOreToIngot", Ore.Deuterium, Ingot.DeuteriumContainer);
-            }
-            if (usedMods[M_DailyNeedsSurvival])
-            {
-                AddRefineryBlueprintOreToIngot("Carbon");
-                AddRefineryBlueprintOreToIngot("Potassium");
-                AddRefineryBlueprintOreToIngot("Phosphorus");
-            }
-            if (usedMods[M_SG_Ores])
-            {
-                AddRefineryBlueprintOreToIngot("Naquadah");
-                AddRefineryBlueprintOreToIngot("Trinium");
-                AddRefineryBlueprintOreToIngot("Neutronium");
-            }
-            if (!usedMods[M_IndustrialOverhaulMod])
-            {
-                AddRefineryBlueprintOreToIngot("Magnesium");
-            }
-            else // IndustrialOverhaulMod
-            {
-                string[] ioModResources = { "Iron", "Nickel", "Cobalt", "Silicon", "Silver", "Gold", "Platinum", "Uranium", "Copper", "Lithium", "Bauxite", "Titanium", "Tantalum", "Sulfur", };
-                // SmelterIngots & RefineryIngots
-                AddRefineryBlueprintOreToIngot("Copper");
-                AddRefineryBlueprint("BauxiteOreToIngot", Ore.Bauxite, Ingot.Aluminium);
-                AddRefineryBlueprintOreToIngot("Titanium");
-                AddRefineryBlueprintOreToIngot("Tantalum");
-                AddRefineryBlueprint("CoalToCarbonBasic", Ore.Coal, Ingot.Carbon);
-                // CrushedToIngot
-                AddRefineryBlueprintsArray(ioModResources, "Crushed", "OreToIngot", "Ore Crushed", "Ingot ");
-                // PurifiedToIngot
-                AddRefineryBlueprintsArray(ioModResources, "Purified", "OreToIngot", "Ore Purified", "Ingot ");
-                // Crusher
-                AddRefineryBlueprintsArray(ioModResources, "Crush", "Ore", "Ore ", "Ore Crushed");
-                AddRefineryBlueprint("CrushNiterOre", Ore.Niter, Ore.Magnesium);
-                AddRefineryBlueprint("CrushStoneOre", Ore.Stone, Ingot.Stone);
-                // Purifier
-                AddRefineryBlueprintsArray(ioModResources, "Purify", "Ore", "Ore Crushed", "Ore Purified");
-                AddRefineryBlueprint("PurifyNiterOre", Ore.Magnesium, "Ore PurifiedNiter");
-                // ChemicalPlantOre
-                AddRefineryBlueprintOreToIngot("Niter");
-                AddRefineryBlueprintOreToIngot("Lithium");
-                AddRefineryBlueprintOreToIngot("Sulfur");
-                AddRefineryBlueprint("CoalToCarbon", Ore.Coal, Ingot.Carbon);
-                AddRefineryBlueprint("CrushedNiterOreToIngot", Ore.Magnesium, Ingot.Niter);
-                AddRefineryBlueprint("PurifiedNiterOreToIngot", "Ore PurifiedNiter", Ingot.Niter);
-                // BitumenExtractor
-                AddRefineryBlueprint("OilSandToCrudeOil", "Ore OilSand", "Ore CrudeOil");
-                // OilCracking
-                AddRefineryBlueprint("CrudeOilCracking", "Ore CrudeOil", "Ingot FuelOil");
-                // CentrifugeIngots
-                AddRefineryBlueprintOreToIngot("Uranium");
-            }
-            refineryBlueprints.Sort((x, y) => x.InputIDName.CompareTo(y.InputIDName));
-        }
         void CalcIngotPrio()
         {
             foreach (var pl in ingotprio.Values) foreach (IPrio ip in pl) ip.setPrio(0);
@@ -3234,26 +3184,6 @@ namespace IngameScript
             return w + "| ";
         }
 
-        string[] modInitList =
-        {
-            M_DailyNeedsSurvival,
-            M_AzimuthThruster,
-            M_SG_Gates,
-            M_SG_Ores,
-            M_PaintGun,
-            M_DeuteriumReactor,
-            M_Shield,
-            M_RailGun,
-            M_HomingWeaponry,
-            M_IndustrialOverhaulMod,
-            M_IndustrialOverhaulLLMod,
-            M_IndustrialOverhaulWaterMod,
-            M_EatDrinkSleep,
-            M_PlantCook,
-            M_AryxEpsteinDrive,
-            M_NorthWindWeapons,
-            M_HSR,
-        };
         string Tag2Ingame(string ststr)
         {
             if (ststr.Contains("Dock")) return "";
