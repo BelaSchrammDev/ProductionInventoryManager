@@ -926,8 +926,8 @@ namespace IngameScript
         }
         string Debug_RefineryBPs()
         {
-            var DebugText = "Accepted BluePrints by Refinerysubtype\n";
-            foreach (var refSubType in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
+            string DebugText = "Accepted BluePrints by Refinerysubtype\n";
+            foreach (string refSubType in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
             {
                 DebugText += "SubType:" + refSubType + "\n";
                 foreach (var refBP in Refinery.refineryTypesAcceptedBlueprintsList[refSubType])
@@ -960,13 +960,23 @@ namespace IngameScript
             return DebugText;
         }
 
+        string Debug_RefineryRecipes()
+        {
+            string DebugText = "Refineryrecipes\n";
+            foreach (var refRecipe in refineryBlueprints)
+            {
+                DebugText += refRecipe.Name + " : " + refRecipe.InputIDName + " -> " + refRecipe.OutputIDName + "\n";
+            }
+            return DebugText;
+        }
+
         void debug()
         {
             var panel = GridTerminalSystem.GetBlockWithName("PIMXXXDEBUG") as IMyTextPanel;
             if (panel == null) return;
             if (panel.CubeGrid != Me.CubeGrid) return;
             var s = "";
-            s += Debug_ComponentPrio();
+            s += Debug_RefineryRecipes();
             panel.WriteText(s + "\n" + debugString);
             debugString = "";
         }
@@ -2892,14 +2902,14 @@ namespace IngameScript
                     }
                 }
             }
-            LoadOrePrioDefs();
+            LoadAndRenderOrePrioDefs();
         }
         static Dictionary<string, Dictionary<RefineryBlueprint, int>> orePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
         const string OrePrioDefString = "(sms,oreprio)";
         const string ResourcenOverview = "(sms,refining)";
         const string Autocrafting = "(sms,autocrafting)";
         const string AmmoPrioDefinition = "(sms,ammoprio)";
-        void LoadOrePrioDefs()
+        void LoadAndRenderOrePrioDefs()
         {
             var lcds = new List<IMyTextPanel>();
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(OrePrioDefString));
@@ -2961,50 +2971,53 @@ namespace IngameScript
                         }
                     }
                 }
-                foreach (var lcd in lcds)
+                RenderOrePrio(lcds, filterStrings);
+            }
+        }
+        void RenderOrePrio(List<IMyTextPanel> lcds, Dictionary<IMyTextPanel, string> filterStrings)
+        {
+            foreach (var lcd in lcds)
+            {
+                // prio wieder schreiben
+                var fString = "*";
+                if (filterStrings.ContainsKey(lcd))
                 {
-                    // prio wieder schreiben
-                    var fString = "*";
-                    if (filterStrings.ContainsKey(lcd))
-                    {
-                        filter.InitFilter(filterStrings[lcd]);
-                        fString = filterStrings[lcd];
-                    }
-                    else
-                    {
-                        filter.SetFilterToAll();
-                    }
-                    var priolist = "/ Orepriorityconfig:\n/ only refinerytypes with '(sms)' in the name are displayed.\n\n/ set the 'value' between 1 and 10000\n/ if value = 0 then the ore will be ignored\n/ if value empty then prio will be calculated by PIM.\n/ any type of scrap is always refined first\n\n/ Refinerytypefilter, separated by comma, '*' for all\n Filter: " + fString + "\n\n/                Resource                |    Value    |        Current\n";
-                    foreach (var key in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
-                    {
-                        if (!orePrioConfig.ContainsKey(key)) orePrioConfig.Add(key, new Dictionary<RefineryBlueprint, int>());
-                        var blueprintList = Refinery.refineryTypesAcceptedBlueprintsList[key].FindAll(o => !o.IsScrap);
-                        if (blueprintList.Count < 2 || !filter.ifFilter(key)) continue;
-                        priolist += linepur + "\n RefineryType: " + key + line;
-                        var curIngotPrioList = ingotprio[key];
-                        blueprintList.Sort((x, y) => x.InputIDName.CompareTo(y.InputIDName));
-                        foreach (var bp in blueprintList)
-                        {
-                            var priostr = "-1";
-                            var curPrio = IPrio.getPrio(curIngotPrioList, bp);
-                            if (orePrioConfig[key].ContainsKey(bp)) priostr = orePrioConfig[key][bp].ToString();
-                            else orePrioConfig[key].Add(bp, -1);
-                            priolist += " "
-                                + (getDisplayBoxString(bp.InputIDName, 61, true))
-                                + " | "
-                                + getDisplayBoxString((priostr == "-1" ? "  |  " : priostr + "  |  "), 25)
-                                + ((curPrio != null && curPrio.initp > 0) ? getDisplayBoxString(curPrio.initp.ToString(), 25) + "  " : "")
-                                + bigSpaces
-                                + "|OrePrio:"
-                                + bp.Name
-                                + "|\n";
-                        }
-                    }
-                    lcd.Alignment = TextAlignment.LEFT;
-                    lcd.ContentType = ContentType.TEXT_AND_IMAGE;
-                    lcd.WriteText(priolist);
+                    filter.InitFilter(filterStrings[lcd]);
+                    fString = filterStrings[lcd];
                 }
-
+                else
+                {
+                    filter.SetFilterToAll();
+                }
+                var priolist = "/ Orepriorityconfig:\n/ only refinerytypes with '(sms)' in the name are displayed.\n\n/ set the 'value' between 1 and 10000\n/ if value = 0 then the ore will be ignored\n/ if value empty then prio will be calculated by PIM.\n/ any type of scrap is always refined first\n\n/ Refinerytypefilter, separated by comma, '*' for all\n Filter: " + fString + "\n\n/                Recipe                       |    Value   |       Current\n";
+                foreach (var key in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
+                {
+                    if (!orePrioConfig.ContainsKey(key)) orePrioConfig.Add(key, new Dictionary<RefineryBlueprint, int>());
+                    var blueprintList = Refinery.refineryTypesAcceptedBlueprintsList[key].FindAll(o => !o.IsScrap);
+                    if (blueprintList.Count < 2 || !filter.ifFilter(key)) continue;
+                    priolist += linepur + "\n RefineryType: " + key + line;
+                    var curIngotPrioList = ingotprio[key];
+                    blueprintList.Sort((x, y) => x.InputIDName.CompareTo(y.InputIDName));
+                    foreach (var bp in blueprintList)
+                    {
+                        var priostr = "-1";
+                        var curPrio = IPrio.getPrio(curIngotPrioList, bp);
+                        if (orePrioConfig[key].ContainsKey(bp)) priostr = orePrioConfig[key][bp].ToString();
+                        else orePrioConfig[key].Add(bp, -1);
+                        priolist += " "
+                            + (getDisplayBoxString(bp.Name, 65, true))
+                            + " | "
+                            + getDisplayBoxString((priostr == "-1" ? "  |  " : priostr + "  |  "), 23)
+                            + ((curPrio != null && curPrio.initp > 0) ? getDisplayBoxString(curPrio.initp.ToString(), 23) + "  " : "")
+                            + bigSpaces
+                            + "|OrePrio:"
+                            + bp.Name
+                            + "|\n";
+                    }
+                }
+                lcd.Alignment = TextAlignment.LEFT;
+                lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+                lcd.WriteText(priolist);
             }
         }
         void RenderAmmoPrioLCDS()
