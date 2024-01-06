@@ -50,7 +50,8 @@
     <AdditionalFiles Include="Instructions.readme" />
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
-    <Compile Include="ItemDefinitions.cs" />
+    <Compile Include="RefineryBluePrints.cs" />
+    <Compile Include="StatusMessage.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig">

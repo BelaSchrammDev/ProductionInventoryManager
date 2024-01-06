@@ -161,5 +161,393 @@ namespace IngameScript
                 else ItemPriority = 100 - (CurrentItemAmount * 100 / MaximumItemAmount);
             }
         }
+
+        void InitAssemblerBluePrints()
+        {
+            if (!usedMods[M_IndustrialOverhaulMod])
+            {
+                // blueprint vanilla
+                // Components
+                C("ConstructionComponent");
+                C("GirderComponent");
+                C("MetalGrid");
+                C("InteriorPlate");
+                C("SteelPlate");
+                C("SmallTube");
+                C("LargeTube");
+                C("MotorComponent");
+                C("Display");
+                C("BulletproofGlass");
+                C("ComputerComponent");
+                C("ReactorComponent");
+                C("ThrustComponent");
+                C("GravityGeneratorComponent");
+                C("MedicalComponent");
+                C("RadioCommunicationComponent");
+                C("DetectorComponent");
+                C("ExplosivesComponent");
+                C("SolarCell");
+                C("PowerCell");
+                C("Superconductor");
+                // Equipment
+                O("Position0010_OxygenBottle");
+                H("Position0020_HydrogenBottle");
+                C("Position0030_Canvas");
+                D("Position0040_Datapad");
+                T("Position0005_FlareGun", "FlareGunItem");
+                A("Position0005_FlareGunMagazine", "FlareClip");
+                A("Position0007_FireworksBoxBlue");
+                A("Position00071_FireworksBoxGreen");
+                A("Position00072_FireworksBoxRed");
+                A("Position00073_FireworksBoxYellow");
+                A("Position00074_FireworksBoxPink");
+                A("Position00075_FireworksBoxRainbow");
+                // Tools
+                T("Position0010_AngleGrinder");
+                T("Position0020_AngleGrinder2");
+                T("Position0030_AngleGrinder3");
+                T("Position0040_AngleGrinder4");
+                T("Position0050_HandDrill");
+                T("Position0060_HandDrill2");
+                T("Position0070_HandDrill3");
+                T("Position0080_HandDrill4");
+                T("Position0090_Welder");
+                T("Position0100_Welder2");
+                T("Position0110_Welder3");
+                T("Position0120_Welder4");
+                // Weapons
+                T("Position0010_SemiAutoPistol");
+                T("Position0020_FullAutoPistol");
+                T("Position0030_EliteAutoPistol");
+                T("Position0040_AutomaticRifle");
+                T("Position0050_RapidFireAutomaticRifle");
+                T("Position0060_PreciseAutomaticRifle");
+                T("Position0070_UltimateAutomaticRifle");
+                T("Position0080_BasicHandHeldLauncher");
+                T("Position0090_AdvancedHandHeldLauncher");
+                // Ammo
+                A("Position0010_SemiAutoPistolMagazine");
+                A("Position0020_FullAutoPistolMagazine");
+                A("Position0030_ElitePistolMagazine");
+                A("Position0040_AutomaticRifleGun_Mag_20rd");
+                A("Position0050_RapidFireAutomaticRifleGun_Mag_50rd");
+                A("Position0060_PreciseAutomaticRifleGun_Mag_5rd");
+                A("Position0080_NATO_25x184mmMagazine");
+                A("Position0070_UltimateAutomaticRifleGun_Mag_30rd");
+                A("Position0090_AutocannonClip");
+                A("Position0100_Missile200mm");
+                A("Position0110_MediumCalibreAmmo");
+                A("Position0120_LargeCalibreAmmo");
+                A("Position0130_SmallRailgunAmmo");
+                A("Position0140_LargeRailgunAmmo");
+            }
+
+
+            /* DailyNeedsSurvivalMod */
+            curmod = M_DailyNeedsSurvival;
+            I("SubFresh", "", "Algae-Soy Product");
+            I("WaterFood", "", "Drinking Water Packet");
+            I("OrganicToNutrients", "Nutrients", "Nutrients");
+            I("ArtificialFood");
+            I("LuxuryMeal");
+            I("SabiroidSteak");
+            I("VeganFood");
+            I("WolfSteak");
+            I("WolfBouillon");
+            I("SabiroidBouillon");
+            I("CoffeeFood", "", "Coffee");
+            I("EmergencyWater", "WaterFood", "Emergency Water Packets");
+            I("EmergencyFood");
+            E("ClonedAnimalMeat", "WolfMeat");
+            E("ClonedSabiroidMeat", "SabiroidMeat");
+            I("Potatoes");
+            I("Tomatoes");
+            I("Carrots");
+            I("Cucumbers");
+            I("PotatoSeeds");
+            I("TomatoSeeds");
+            I("CarrotSeeds");
+            I("CucumberSeeds");
+            I("Ketchup");
+            I("MartianSpecial");
+            I("OrganicToFertilizer", "Fertilizer", "Organic Fertilizer");
+            I("IngotsToFertilizer", "Fertilizer", "Artificial Fertilizer");
+            I("NotBeefBurger");
+            I("ToFurkey", "", "ToFurkey Dinner");
+            I("SpaceMealBar");
+            I("HotChocolate");
+            I("SpacersBreakfast");
+            I("ProteinShake");
+
+            /* AzimuthThrusterMod */
+            curmod = M_AzimuthThruster;
+            C("AzimuthSuperchargerComponent", "AzimuthSupercharger");
+
+            /* StargateMods */
+            curmod = M_SG_Ores;
+            C("Naquadah", "", "Naquadah Bars");
+            C("Trinium", "", "Trinium Plate");
+            C("Neutronium", "", "Neutronium Crate");
+
+            if (!usedMods[M_SG_Ores])
+            {
+                curmod = M_SG_Gates;
+                C("Naquadah", "", "Naquadah Bars");
+            }
+
+            /* PaintGunMod */
+            curmod = M_PaintGun;
+            T("Blueprint_PaintGun", "PhysicalPaintGun");
+            A("Blueprint_PaintGunMag", "PaintGunMag");
+
+            /* DeuteriumReactorMod */
+            curmod = M_DeuteriumReactor;
+            C("Magnetron_Component");
+            I("DeuteriumOreToIngot", "DeuteriumContainer", "Deuterium");
+            I("StonetoDeuterium", "DeuteriumContainer", "Deuterium (Stone)");
+            I("IcetoDeuterium", "DeuteriumContainer", "Deuterium (Ice)");
+
+            /* DefenseShieldMod */
+            curmod = M_Shield;
+            C("ShieldComponentBP", "ShieldComponent", "Field Emitter");
+
+            /* MCRN RailGunMod */
+            curmod = M_RailGun;
+            A("RailGunAmmoMag");
+
+            /* MWI Homing Weaponry Mod */
+            curmod = M_HomingWeaponry;
+            A("TorpedoMk1_Blueprint", "TorpedoMk1");
+            A("SwarmMissileMk1_Blueprint", "SwarmMissile50mm");
+            A("DestroyerMissileX_Blueprint", "DestroyerMissileX");
+            A("DestroyerMissileMk1_Blueprint", "DestroyerMissileMk1");
+
+            /* Industrial Overhaul Mod */
+            curmod = M_IndustrialOverhaulMod;
+            // Reprocessor
+            I(Refinery.BluePrint_SpentFuelReprocessing, "Uranium", "Nuclear Fuel");
+            // AssemblingBenchComponents
+            C("CopperWire");
+            C("Electromagnet");
+            C("Lightbulb");
+            C("AcidPowerCell");
+            C("AlkalinePowerCell");
+            C("HeatingElement");
+            C("POConstructionComponent", "Construction");
+            C("POSteelPlate", "SteelPlate");
+            C("POSmallTube", "SmallTube");
+            C("POLargeTube", "LargeTube");
+            C("POMotorComponent", "Motor");
+            C("POComputerComponent", "Computer");
+            C("PORadioCommunicationComponent", "RadioCommunication");
+            // FabricatorComponents
+            C("Electromagnet");
+            C("Lightbulb");
+            C("AlkalinePowerCell");
+            C("HeatingElement");
+            C("POMetalGrid", "MetalGrid");
+            // WireDrawerComponents
+            C("GoldWire");
+            C("POSuperconductor", "Superconductor");
+            // PlateStampComponents
+            C("CompositeArmor");
+            C("TitaniumPlate");
+            C("ArmoredPlate");
+            C("POInteriorPlate", "InteriorPlate");
+            // ExtruderComponents
+            C("POGirderComponent", "Girder");
+            // SiliconFuserComponents
+            C("ArmorGlass");
+            C("Ceramic");
+            C("POBulletproofGlass", "BulletproofGlass");
+            // CementKilnComponents
+            C("Concrete");
+            // AssemblerComponents
+            C("Capacitor");
+            C("Cryocooler");
+            C("POMedicalComponent", "Medical");
+            C("POSolarCell", "SolarCell");
+            // MicroelectronicsFactoryComponents
+            C("Thermocouple");
+            C("AdvancedComputer");
+            C("PODisplay", "Display");
+            C("PODetectorComponent", "Detector");
+            // AutoLoomComponents
+            C("Fabric");
+            C("POCanvas", "Canvas");
+            // AdvancedAssemblerComponents
+            C("TokamakBlanket");
+            C("SuperMagnet");
+            C("LaserEmitter");
+            C("POReactorComponent", "Reactor");
+            C("POPowerCell", "PowerCell");
+            // NanoAssemblerComponents
+            C("ElectronMatrix");
+            C("QuantumComputer");
+            C("POThrustComponent", "Thrust");
+            C("POGravityGeneratorComponent", "GravityGenerator");
+            C("FSSolarCell");
+            // MunitionsFactory
+            C("POExplosivesComponent", "Explosives");
+            I("Gunpowder", "Magnesium");
+            A("POInteriorTurret_Mag_50rd", "InteriorTurret_Mag_50rd");
+            A("PONATO_25x184mmMagazine", "NATO_25x184mm");
+            A("DUNATO_25x184mmMagazine", "DUNATO_25x184mm");
+            A("POMissile200mm", "Missile200mm");
+            A("POFullAutoPistolMagazine", "FullAutoPistolMagazine");
+            A("POElitePistolMagazine", "ElitePistolMagazine");
+            A("POAutomaticRifleGun_Mag_20rd", "AutomaticRifleGun_Mag_20rd");
+            A("PORapidFireAutomaticRifleGun_Mag_50rd", "RapidFireAutomaticRifleGun_Mag_50rd");
+            A("POPreciseAutomaticRifleGun_Mag_5rd", "PreciseAutomaticRifleGun_Mag_5rd");
+            A("POUltimateAutomaticRifleGun_Mag_30rd", "UltimateAutomaticRifleGun_Mag_30rd");
+            A("AutocannonClipDUAP");
+            A("MediumCalibreAmmoHE");
+            A("MediumCalibreAmmoDUAP");
+            A("LargeCalibreAmmoHE");
+            A("LargeCalibreAmmoDUAP");
+            A("SmallRailgunAmmoDUAP");
+            // ChemicalPlantComponents
+            C("PolymerToPlastic", "Plastic");
+            C("Rubber");
+            I("SyntheticPolymer", "Polymer");
+            C("Asphalt");
+            // T1Tools
+            T("POWelder", "WelderItem");
+            T("POAngleGrinder", "AngleGrinderItem");
+            T("POHandDrill", "HandDrillItem");
+            T("POSemiAutoPistol", "SemiAutoPistolItem");
+            A("POSemiAutoPistolMagazine", "SemiAutoPistolMagazine");
+            // Bottles
+            O("POOxygenBottle", "OxygenBottle");
+            H("POHydrogenBottle", "HydrogenBottle");
+            // T2Tools
+            T("POWelder2", "Welder2Item");
+            T("POAngleGrinder2", "AngleGrinder2Item");
+            T("POHandDrill2", "HandDrill2Item");
+            T("POAutomaticRifle", "AutomaticRifleItem");
+            T("POPreciseAutomaticRifle", "PreciseAutomaticRifleItem");
+            T("PORapidFireAutomaticRifle", "RapidFireAutomaticRifleItem");
+            T("POBasicHandHeldLauncher", "BasicHandHeldLauncherItem");
+            T("POFullAutoPistol", "FullAutoPistolItem");
+            // T3Tools
+            T("POWelder3", "Welder3Item");
+            T("POAngleGrinder3", "AngleGrinder3Item");
+            T("POHandDrill3", "HandDrill3Item");
+            T("POUltimateAutomaticRifle", "UltimateAutomaticRifleItem");
+            T("POAdvancedHandHeldLauncher", "AdvancedHandHeldLauncherItem");
+            T("POEliteAutoPistol", "ElitePistolItem");
+            // T4Tools
+            T("POWelder4", "Welder4Item");
+            T("POAngleGrinder4", "AngleGrinder4Item");
+            T("POHandDrill4", "HandDrill4Item");
+
+            // IndustrialOverhaulWater Mod
+            curmod = M_IndustrialOverhaulWaterMod;
+            C("Foam");
+            C("BuoyancyTube");
+
+            // IndustrialOverhaulLockLoad Mod
+            curmod = M_IndustrialOverhaulLLMod;
+            // CompressedGravel
+            A("GravelMag");
+            A("GravelMagBig");
+            // MunitionsFactory
+            A("155mmAPShell");
+            A("155mmDUAPShell");
+            A("155mmHEShell");
+            A("305mmAPShell");
+            A("305mmDUAPShell");
+            A("305mmHEShell");
+            A("APCoilgunShell");
+            A("DUAPCoilgunShell");
+            A("CLGGMag", "CLGG");
+
+            curmod = M_EatDrinkSleep;
+            // Emergency
+            K("SparklingWater");
+            K("Emergency_Ration");
+
+            curmod = M_PlantCook;
+            // Farming
+            I("Soya");
+            I("Herbs");
+            // Cooking
+            K("AppleJuice");
+            K("ApplePie");
+            K("Tofu");
+            K("MeatRoasted");
+            K("ShroomSteak");
+            K("Bread");
+            K("Burger");
+            K("Soup");
+            K("MushroomSoup");
+            K("TofuSoup");
+            K("SparklingWaterCan", "SparklingWater");
+            K("EuropaTea");
+            // MushroomsFarm
+            K("FarmedMushrooms", "Mushrooms");
+            // AppleFarm
+            K("FarmedApples", "Apple");
+            // WheatFarm
+            I("FarmedWheat", "Wheat");
+            // HerbsFarm
+            I("FarmedHerbs", "Herbs");
+            // Soya_Farm
+            I("FarmedSoya", "Soya");
+            // VegetablesFarm
+            I("FarmedPumpkin", "Pumpkin");
+            I("FarmedCabbage", "Cabbage");
+
+            curmod = M_AryxEpsteinDrive;
+            C("AryxLynxon_FusionComponentBP", "AryxLynxon_FusionComponent", "Fusion Coil");
+
+            curmod = M_HSR;
+            // Components
+            C("K_HSR_Component_Rail_Vanilla", "K_HSR_RailComponents");
+            A("K_HSR_Ammuntion_Recipe_Slug", "K_HSR_Slug");
+            C("K_HSR_Component_AssemblerStabilizer_Vanilla", "K_HSR_AssemblerSystem");
+            // HSR_BlueprintClassFolder
+            C("K_HSR_Component_Rail", "K_HSR_RailComponents");
+            C("K_HSR_Component_PulseSystem", "K_HSR_PulseSystem");
+            C("K_HSR_Component_Globe", "K_HSR_Globe");
+            C("K_HSR_Component_Circuitry", "K_HSR_HyperConductiveCircuitry");
+            C("K_HSR_Component_HexPlate", "K_HSR_HexagolPlating");
+            C("K_HSR_Component_Conduit", "K_HSR_GelConduit");
+            C("K_HSR_Component_GlobeII", "K_HSR_Globe_II");
+            C("K_HSR_Component_RailII", "K_HSR_RailComponents_II");
+            C("K_HSR_Component_HexPlateII", "K_HSR_HexagolPlating_II");
+            C("K_HSR_Component_RailIII", "K_HSR_RailComponents_III");
+            // HSR_BlueprintClassFolderII
+            A("K_HSR_Ammuntion_Recipe_Slug_Automated", "K_HSR_Slug");
+            // HSR_BlueprintClassFolderIII
+            I("K_HSR_NaniteSludge_Recipe", "K_HSR_Nanites_Sludge");
+            I("K_HSR_EnergizedGel_Recipe", "K_HSR_Nanites_EnergizedGel");
+            I("K_HSR_Hexagol_Recipe", "K_HSR_Nanites_Hexagol");
+            I("K_HSR_Chromium_Recipe", "K_HSR_Nanites_Chromium");
+
+            curmod = M_NorthWindWeapons;
+            // Ammo
+            A("R75ammo", "", "75mm Railgun Ammo");
+            A("R150ammo", "", "150mm Railgun Ammo");
+            A("R250ammo", "", "250mm Railgun Ammo");
+            A("H203Ammo", "", "203mm HE Ammo");
+            A("H203AmmoAP", "", "203mm AP Ammo");
+            A("C30Ammo", "", "30mm Standard Ammo");
+            A("C30DUammo", "", "30mm DU Ammo");
+            A("CRAM30mmAmmo", "", "30mm C-RAM Ammo");
+            A("C100mmAmmo", "", "100mm HE Ammo");
+            A("C300AmmoAP", "", "300mm AP Ammo");
+            A("C300AmmoHE", "", "300mm HE Ammo");
+            A("C300AmmoG", "", "300mm Guided Ammo");
+            A("C400AmmoAP", "", "400mm AP Ammo");
+            A("C400AmmoHE", "", "400mm HE Ammo");
+            A("C400AmmoCluster", "", "400mm Cluster Ammo");
+            A("C500AmmoAP", "", "500mm AP Ammo");
+            A("C500AmmoHE", "", "500mm HE Ammo");
+            A("C500AmmoCasaba", "", "500mm Casaba Ammo");
+            A("PlasmaCell10MJ", "", "10MJ PlasmaCannon Cell");
+
+            curmod = "";
+        }
     }
 }

@@ -42,7 +42,7 @@ namespace IngameScript
         static List<storageInventory> storageinvs = new List<storageInventory>();
         List<IMyRefinery> raff = new List<IMyRefinery>();
         List<IMyAssembler> ass = new List<IMyAssembler>();
-        List<Assembler> okumas = new List<Assembler>();
+        static List<Assembler> okumas = new List<Assembler>();
         List<IMyUserControllableGun> ugun = new List<IMyUserControllableGun>();
         List<IMyTerminalBlock> tbl = new List<IMyTerminalBlock>();
         List<string> collectAll_List = new List<string>();
@@ -780,122 +780,6 @@ namespace IngameScript
                 return false;
             }
         }
-        static List<View> viewList = new List<View>();
-        abstract class View
-        {
-            public const string Color_Red = "[Color=#FFFF0000]", Color_Yellow = "[Color=#FF000000]", Color_End = "[/Color]";
-            public enum ViewType { NONE, INFO, WARNING, ERROR }
-            DateTime burn = DateTime.Now;
-            public ViewType type = ViewType.NONE;
-            int lebenssekunden = -1;
-            string infotext = "";
-            public View()
-            {
-                type = ViewType.INFO;
-            }
-            public View(ViewType itype)
-            {
-                type = itype;
-            }
-            public View(string itext, ViewType itype, int sec = -1)
-            {
-                infotext = itext;
-                type = itype;
-                lebenssekunden = sec;
-            }
-            public virtual string getInfoText() { return infotext; }
-            public bool isOver() { if (lebenssekunden == -1) return false; if ((DateTime.Now - burn).TotalSeconds > lebenssekunden) return true; return false; }
-            public void setOver() { lebenssekunden = 0; }
-        }
-        class Info : View
-        {
-            public Info(string text, int sec = -1) : base(text, ViewType.INFO, sec) { }
-        }
-        class Warning : View
-        {
-            public enum ID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, Incinerator, RefineryNotSupportet }
-            public ID w_ID = ID.NONE;
-            public string subType = "";
-            public Warning(ID warn_ID, string isubtype = "") : base(ViewType.WARNING) { w_ID = warn_ID; subType = isubtype; }
-            public override string getInfoText()
-            {
-                switch (w_ID)
-                {
-                    case ID.RefineryNotSupportet: return "refinery '" + subType + "' not supported.";
-                    case ID.Incinerator: return "incinerator (IOmod) not supported.";
-                    case ID.CARGOUSEHEAVY: return "cargo with " + subType + " is heavy.";
-                    case ID.CARGOUSEFULL: return "cargo with " + subType + " is full !!!!!";
-                }
-                return "";
-            }
-        }
-        class ErrorInfo : View
-        {
-            public enum ErrorID { NONE, CARGOFULL, };
-            public ErrorInfo(ErrorID e_id) : base("", ViewType.ERROR) { }
-        }
-        class AmmoManagerInfo : View
-        {
-            public override string getInfoText()
-            {
-                if (guns.Count == 0) return "";
-                return "  AmmoMan.: controls " + guns.Count + " weapons.";
-            }
-        }
-        class StorageManagerInfo : View
-        {
-            public override string getInfoText()
-            {
-                if (storageCargos.Count == 0) return "";
-                return "StorageMan.: controls " + storageCargos.Count + " containers.";
-            }
-        }
-        static void setInfo(string warnungstext, int zeit = 10)
-        {
-            viewList.Add(new Info(warnungstext, zeit));
-        }
-        static void setWarning(Warning.ID warnID, string subtype = "")
-        {
-            if (getWarning(warnID, subtype) == null) viewList.Add(new Warning(warnID, subtype));
-        }
-        static Warning getWarning(Warning.ID warnID, string subtype)
-        {
-            foreach (var v in viewList)
-            {
-                if (v is Warning)
-                {
-                    var w = v as Warning;
-                    if ((w.w_ID == warnID) && w.subType == subtype) return w;
-                }
-            }
-            return null;
-        }
-        void clearWarning(Warning.ID warnID, string subtype)
-        {
-            var w = getWarning(warnID, subtype);
-            if (w != null) w.setOver();
-        }
-        string getInfos()
-        {
-            var infostring = "\n";
-            var warnungstring = "";
-            var errorstring = "";
-            foreach (var v in viewList)
-            {
-                switch (v.type)
-                {
-                    case View.ViewType.INFO:
-                        var s = v.getInfoText();
-                        infostring += s + (s == "" ? "" : "\n");
-                        break;
-                    case View.ViewType.WARNING: warnungstring += v.getInfoText() + "\n"; break;
-                    case View.ViewType.ERROR: errorstring += v.getInfoText() + "\n"; break;
-                }
-            }
-            if (warnungstring != "") infostring += "\nWarning:\n" + warnungstring + "\n";
-            if (errorstring != "") infostring += "\nErrors:\n" + errorstring;
-            return infostring;
-        }
         void writeInfo()
         {
             var s = SI1 + SI2 + getRunningSign() + (master == null ? (" Running / " + MAXIC + " inst. per run\ncurrent cycle: " + currentCycleInSec.ToString("0.0") + " sec.\n" + getInfos()) : "Standby\nMaster: " + master.CustomName);
@@ -912,6 +796,8 @@ namespace IngameScript
         {
             viewList.Add(new AmmoManagerInfo());
             viewList.Add(new StorageManagerInfo());
+            viewList.Add(new RefineryManagerInfo());
+            viewList.Add(new AssemblerManagerInfo());
             LoadConfig();
             InitAssemblerBluePrints();
             InitRefineryBlueprints();
@@ -970,13 +856,22 @@ namespace IngameScript
             return DebugText;
         }
 
+        string Debug_InventoryManagerList()
+        {
+            var DebugText = "InventoryManagerList:\n";
+            foreach (var inventoryKey in InventoryManagerList.Keys)
+            {
+                DebugText += " - Key: " + inventoryKey + " / " + InventoryManagerList[inventoryKey].Count + " Inventorys\n";
+            }
+            return DebugText;
+        }
         void debug()
         {
             var panel = GridTerminalSystem.GetBlockWithName("PIMXXXDEBUG") as IMyTextPanel;
             if (panel == null) return;
             if (panel.CubeGrid != Me.CubeGrid) return;
             var s = "";
-            s += Debug_RefineryRecipes();
+            s += Debug_InventoryManagerList();
             panel.WriteText(s + "\n" + debugString);
             debugString = "";
         }
@@ -1069,8 +964,8 @@ namespace IngameScript
                         InventoryList_SMSflagged.Clear();
                         InventoryList_nonSMSflagged.Clear();
                         CargoUseList.Clear();
-                        foreach (var ivl in i_l.Values) ivl.Clear();
-                        i_l.Clear();
+                        foreach (var ivl in InventoryManagerList.Values) ivl.Clear();
+                        InventoryManagerList.Clear();
                         m0++;
                         break;
                     case 4:
@@ -1249,9 +1144,9 @@ namespace IngameScript
                         {
                             StackItemList.Clear();
                             StackItem.ClearStackInventory();
-                            if (i_l.ContainsKey(stack_type))
+                            if (InventoryManagerList.ContainsKey(stack_type))
                             {
-                                foreach (var i in i_l[stack_type])
+                                foreach (var i in InventoryManagerList[stack_type])
                                 {
                                     new_stackcount(i, stack_type);
                                     StackItem.CalculateFreeInventory(i);
@@ -1562,7 +1457,7 @@ namespace IngameScript
                         else m0--;
                         break;
                     default:
-                        for (int i = viewList.Count - 1; i >= 0; i--) { if (viewList[i].isOver()) viewList.Remove(viewList[i]); }
+                        for (int i = viewList.Count - 1; i >= 0; i--) { if (viewList[i].IsOver()) viewList.Remove(viewList[i]); }
                         foreach (var c in CargoUseList.Keys)
                         {
                             var cargoUseRatio = CargoUseList[c].GetCarcocapacityUseRatio();
@@ -1619,17 +1514,14 @@ namespace IngameScript
                 var ingame = Tag2Ingame(tag);
                 if (ingame != "")
                 {
-                    if (!i_l.ContainsKey(ingame))
-                    {
-                        i_l.Add(ingame, new List<IMyInventory>());
-                    }
-                    if (!i_l[ingame].Contains(inv)) i_l[ingame].Add(inv);
+                    if (!InventoryManagerList.ContainsKey(ingame)) InventoryManagerList.Add(ingame, new List<IMyInventory>());
+                    if (!InventoryManagerList[ingame].Contains(inv)) InventoryManagerList[ingame].Add(inv);
                     if (!CargoUseList.ContainsKey(tag)) CargoUseList.Add(tag, new CargoUse(tag));
                     CargoUseList[tag].AddCurrentAndMaxCargocapacity(inv.CurrentVolume.RawValue / 1000, inv.MaxVolume.RawValue / 1000);
                 }
             }
         }
-        static Dictionary<string, List<IMyInventory>> i_l = new Dictionary<string, List<IMyInventory>>();
+        static Dictionary<string, List<IMyInventory>> InventoryManagerList = new Dictionary<string, List<IMyInventory>>();
         static List<IMyInventory> InventoryList_SMSflagged = new List<IMyInventory>();
         static List<IMyInventory> InventoryList_nonSMSflagged = new List<IMyInventory>();
         void pushTerminalBlock(IMyTerminalBlock t)
@@ -1807,6 +1699,7 @@ namespace IngameScript
             if (von.Count() == 0) return;
             for (int j = von.Count() - 1; j >= 0; j--)
             {
+                bool success = false;
                 var vcon = von[j].Type;
                 var clr = true;
                 if (typeID_l != null)
@@ -1824,9 +1717,11 @@ namespace IngameScript
                 var stype = vcon.SubtypeId.ToString();
                 var fullid = idstr[1] + " " + stype;
                 var atype = TypeCast(fullid);
-                if (i_l.ContainsKey(fullid)) SendItemByNum(quelle, j, i_l[fullid]);
-                else if (atype != "" && i_l.ContainsKey(atype)) SendItemByNum(quelle, j, i_l[atype]);
-                else if (i_l.ContainsKey(idstr[1])) SendItemByNum(quelle, j, i_l[idstr[1]]);
+                if (InventoryManagerList.ContainsKey(fullid)) success = SendItemByNum(quelle, j, InventoryManagerList[fullid]);
+                else if (atype != "" && InventoryManagerList.ContainsKey(atype)) success = SendItemByNum(quelle, j, InventoryManagerList[atype]);
+                else if (InventoryManagerList.ContainsKey(idstr[1])) success = SendItemByNum(quelle, j, InventoryManagerList[idstr[1]]);
+                if (success) clearWarning(Warning.ID.CargoMissing, idstr[1]);
+                else setWarning(Warning.ID.CargoMissing, idstr[1]);
             }
         }
         void new_stackcount(IMyInventory quelle, string ti)
@@ -1835,7 +1730,7 @@ namespace IngameScript
             quelle.GetItems(von);
             foreach (var i in von)
             {
-                if (i.Type.TypeId.Contains(ti) && !i_l.ContainsKey(GetPIMItemID(i.Type)))
+                if (i.Type.TypeId.Contains(ti) && !InventoryManagerList.ContainsKey(GetPIMItemID(i.Type)))
                 {
                     GetStackItem(i.Type).AddStack(quelle, i.Amount);
                 }
@@ -1848,9 +1743,9 @@ namespace IngameScript
             var atype = TypeCast(type);
             var trans = false;
             if (amount == 0) amount = (float)item.Amount;
-            if (i_l.ContainsKey(type)) trans = SendItemByIItem(quelle, item, amount, i_l[type]);
-            else if (atype != "" && i_l.ContainsKey(atype)) trans = SendItemByIItem(quelle, item, amount, i_l[atype]);
-            else if (i_l.ContainsKey(typeID)) trans = SendItemByIItem(quelle, item, amount, i_l[typeID]);
+            if (InventoryManagerList.ContainsKey(type)) trans = SendItemByIItem(quelle, item, amount, InventoryManagerList[type]);
+            else if (atype != "" && InventoryManagerList.ContainsKey(atype)) trans = SendItemByIItem(quelle, item, amount, InventoryManagerList[atype]);
+            else if (InventoryManagerList.ContainsKey(typeID)) trans = SendItemByIItem(quelle, item, amount, InventoryManagerList[typeID]);
             return trans;
         }
         static bool SendItemByIItem(IMyInventory quelle, MyInventoryItem item, float amount, List<IMyInventory> ziele)
@@ -1896,10 +1791,15 @@ namespace IngameScript
             List<IMyInventory> quellen = null;
             var idstr = itemType.Split('_');
             var atype = TypeCast(idstr[1] + " " + itemSubType);
-            if (i_l.ContainsKey(idstr[1] + " " + itemSubType)) quellen = i_l[idstr[1] + " " + itemSubType];
-            else if (atype != "" && i_l.ContainsKey(atype)) quellen = i_l[atype];
-            else if (i_l.ContainsKey(idstr[1])) quellen = i_l[idstr[1]];
-            else return false;
+            if (InventoryManagerList.ContainsKey(idstr[1] + " " + itemSubType)) quellen = InventoryManagerList[idstr[1] + " " + itemSubType];
+            else if (atype != "" && InventoryManagerList.ContainsKey(atype)) quellen = InventoryManagerList[atype];
+            else if (InventoryManagerList.ContainsKey(idstr[1])) quellen = InventoryManagerList[idstr[1]];
+            else
+            {
+                setWarning(Warning.ID.CargoMissing, idstr[1]);
+                return false;
+            }
+            clearWarning(Warning.ID.CargoMissing, idstr[1]);
             for (int i = 0; i < quellen.Count; i++)
             {
                 var von = new List<MyInventoryItem>();
@@ -1927,6 +1827,7 @@ namespace IngameScript
             public List<AssemblerBluePrint> BlueprintList = new List<AssemblerBluePrint>();
             public Parameter pms = new Parameter();
             public IMyAssembler AssemblerBlock;
+            bool outputInventoryNotEmpty = false;
             bool IsSurvivalKit = false;
             bool RemoveItemMode = false;
             public Assembler(IMyAssembler a)
@@ -1972,13 +1873,20 @@ namespace IngameScript
                 }
                 return ret;
             }
+            public string GetAssemblerErrorInfo()
+            {
+                if (outputInventoryNotEmpty) return pms.Name + " cannot empty output.\n";
+                return "";
+            }
             public void Refresh()
             {
                 var proditem_list = new List<MyProductionItem>();
                 var bprint_list = new List<AssemblerBluePrint>();
                 if (AssemblerBlock.Mode == MyAssemblerMode.Assembly)
                 {
-                    ClearInventory(AssemblerBlock.GetInventory(1));
+                    var outInventory = AssemblerBlock.GetInventory(1);
+                    ClearInventory(outInventory);
+                    outputInventoryNotEmpty = outInventory.CurrentVolume > 0;
                     AssemblerBlock.GetQueue(proditem_list);
                     for (int i = proditem_list.Count - 1; i >= 0; i--)
                     {
@@ -2223,19 +2131,23 @@ namespace IngameScript
         {
             static public string priobt = "";
             static public int cn = 0;
-            public static Dictionary<string, List<RefineryBlueprint>> refineryTypesAcceptedBlueprintsList = new Dictionary<string, List<RefineryBlueprint>>();
-            public static void RemoveUnusedRefinerytypeBlueprintLists()
+            static public Dictionary<string, List<RefineryBlueprint>> refineryTypesAcceptedBlueprintsList = new Dictionary<string, List<RefineryBlueprint>>();
+            static public void RemoveUnusedRefinerytypeBlueprintLists()
             {
                 foreach (var a in refineryTypesAcceptedBlueprintsList.Keys.ToArray())
                     if (refineryTypesAcceptedBlueprintsList.ContainsKey(a) && !priobt.Contains("@" + a))
                         refineryTypesAcceptedBlueprintsList.Remove(a);
             }
-            public enum RefineryRefreshType { Unknow, VanillaRefinery, WaterRecyclingSystem, HydroponicsFarm, Reprocessor, Incinerator, }
+
+
+            public enum RefreshType { Unknow, VanillaRefinery, WaterRecyclingSystem, HydroponicsFarm, Reprocessor, Incinerator, }
+            public enum RefError { NotFilled, OutputNotEmpty, }
             IMyInventory InputInventory, OutputInventory;
             public Dictionary<string, float> InputInventoryItems = new Dictionary<string, float>();
-            public RefineryTypeDefinitions typeid;
+            public TypeDefinitions typeid;
             public Parameter pms = new Parameter();
             public IMyRefinery RefineryBlock = null;
+            public List<RefError> ErrorList = new List<RefError>();
             public List<RefineryBlueprint> AcceptedBlueprints = null;
             public string BlockSubType = "";
             public int fertig;
@@ -2243,40 +2155,41 @@ namespace IngameScript
             RefineryBlueprint NextWorkBluePrint = null;
             float CurrentWorkOreAmount = 0;
             float NexWorkOreAmount = 0;
-            public class RefineryTypeDefinitions
+            
+            public class TypeDefinitions
             {
                 string TypeIDName;
                 bool ComplettName;
-                RefineryRefreshType TypeID;
+                RefreshType TypeID;
                 String AlternativName;
-                public RefineryTypeDefinitions()
+                public TypeDefinitions()
                 {
                     TypeIDName = "";
                     ComplettName = true;
-                    TypeID = RefineryRefreshType.Unknow;
-                    AlternativName = RefineryRefreshType.Unknow.ToString();
+                    TypeID = RefreshType.Unknow;
+                    AlternativName = RefreshType.Unknow.ToString();
                 }
-                public RefineryTypeDefinitions(string iTypeName, RefineryRefreshType iTypeID, string iAlternativName = "")
+                public TypeDefinitions(string iTypeName, RefreshType iTypeID, string iAlternativName = "")
                 {
                     TypeIDName = iTypeName;
                     ComplettName = true;
                     TypeID = iTypeID;
                     AlternativName = iAlternativName;
                 }
-                public RefineryTypeDefinitions(bool iComplettName, string iTypeName, RefineryRefreshType iTypeID, string iAlternativName = "")
+                public TypeDefinitions(bool iComplettName, string iTypeName, RefreshType iTypeID, string iAlternativName = "")
                 {
                     TypeIDName = iTypeName;
                     ComplettName = iComplettName;
                     TypeID = iTypeID;
                     AlternativName = iAlternativName;
                 }
-                public RefineryRefreshType GetTypeID() { return TypeID; }
+                public RefreshType GetTypeID() { return TypeID; }
                 public string GetAlternativOrDefaultName() { return AlternativName == "" ? TypeIDName : AlternativName; }
-                public bool IsVanillaManagment() { return TypeID == RefineryRefreshType.VanillaRefinery; }
-                public bool IsUnknowType() { return TypeID == RefineryRefreshType.Unknow; }
+                public bool IsVanillaManagment() { return TypeID == RefreshType.VanillaRefinery; }
+                public bool IsUnknowType() { return TypeID == RefreshType.Unknow; }
                 public bool CompareTypeName(string compareString)
                 {
-                    if (TypeID == RefineryRefreshType.Unknow)
+                    if (TypeID == RefreshType.Unknow)
                     {
                         AlternativName = compareString;
                         return true;
@@ -2286,24 +2199,24 @@ namespace IngameScript
                     return false;
                 }
             }
-            List<RefineryTypeDefinitions> TypeDefinitions = new List<RefineryTypeDefinitions>
+            List<TypeDefinitions> TypeDefs = new List<TypeDefinitions>
             {
-                new RefineryTypeDefinitions( false, "WRS", RefineryRefreshType.WaterRecyclingSystem, "Water Recycling System" ),
-                new RefineryTypeDefinitions( "Blast Furnace", RefineryRefreshType.VanillaRefinery, "Basic Refinery"),
-                new RefineryTypeDefinitions( "LargeRefineryIndustrial", RefineryRefreshType.VanillaRefinery, "Large Industrial Refinery"),
-                new RefineryTypeDefinitions( "LargeRefinery", RefineryRefreshType.VanillaRefinery, "Large Refinery"),
-                new RefineryTypeDefinitions( "K_HSR_Refinery_A", RefineryRefreshType.VanillaRefinery, "HSR Refinery A"),
-                new RefineryTypeDefinitions( false, "Hydroponics", RefineryRefreshType.HydroponicsFarm, "Hydroponics Farm"),
-                new RefineryTypeDefinitions( "RockCrusher", RefineryRefreshType.VanillaRefinery),
-                new RefineryTypeDefinitions( "OrePurifier", RefineryRefreshType.VanillaRefinery),
-                new RefineryTypeDefinitions( "ChemicalPlant", RefineryRefreshType.VanillaRefinery),
-                new RefineryTypeDefinitions( "Centrifuge", RefineryRefreshType.VanillaRefinery),
-                new RefineryTypeDefinitions( "Incinerator", RefineryRefreshType.Incinerator),
-                new RefineryTypeDefinitions( "BitumenExtractor", RefineryRefreshType.VanillaRefinery),
-                new RefineryTypeDefinitions( "Reprocessor", RefineryRefreshType.Reprocessor),
-                new RefineryTypeDefinitions( "OilCracker", RefineryRefreshType.VanillaRefinery),
-                new RefineryTypeDefinitions( "DeuteriumProcessor", RefineryRefreshType.VanillaRefinery, "Deuterium Refinery"),
-                new RefineryTypeDefinitions(), // LastListItem    
+                new TypeDefinitions( false, "WRS", RefreshType.WaterRecyclingSystem, "Water Recycling System" ),
+                new TypeDefinitions( "Blast Furnace", RefreshType.VanillaRefinery, "Basic Refinery"),
+                new TypeDefinitions( "LargeRefineryIndustrial", RefreshType.VanillaRefinery, "Large Industrial Refinery"),
+                new TypeDefinitions( "LargeRefinery", RefreshType.VanillaRefinery, "Large Refinery"),
+                new TypeDefinitions( "K_HSR_Refinery_A", RefreshType.VanillaRefinery, "HSR Refinery A"),
+                new TypeDefinitions( false, "Hydroponics", RefreshType.HydroponicsFarm, "Hydroponics Farm"),
+                new TypeDefinitions( "RockCrusher", RefreshType.VanillaRefinery),
+                new TypeDefinitions( "OrePurifier", RefreshType.VanillaRefinery),
+                new TypeDefinitions( "ChemicalPlant", RefreshType.VanillaRefinery),
+                new TypeDefinitions( "Centrifuge", RefreshType.VanillaRefinery),
+                new TypeDefinitions( "Incinerator", RefreshType.Incinerator),
+                new TypeDefinitions( "BitumenExtractor", RefreshType.VanillaRefinery),
+                new TypeDefinitions( "Reprocessor", RefreshType.Reprocessor),
+                new TypeDefinitions( "OilCracker", RefreshType.VanillaRefinery),
+                new TypeDefinitions( "DeuteriumProcessor", RefreshType.VanillaRefinery, "Deuterium Refinery"),
+                new TypeDefinitions(), // LastListItem    
             };
             public Refinery(IMyRefinery refinery)
             {
@@ -2311,7 +2224,7 @@ namespace IngameScript
                 InputInventory = refinery.GetInventory(0);
                 OutputInventory = refinery.GetInventory(1);
                 BlockSubType = refinery.BlockDefinition.SubtypeId;
-                typeid = TypeDefinitions.Find(t => t.CompareTypeName(BlockSubType));
+                typeid = TypeDefs.Find(t => t.CompareTypeName(BlockSubType));
                 BlockSubType = typeid.GetAlternativOrDefaultName();
                 AcceptedBlueprints = refineryBlueprints.FindAll(b => RefineryBlock.CanUseBlueprint(b.Definition_id));
                 GetScrapBluePrints();
@@ -2340,20 +2253,20 @@ namespace IngameScript
                 {
                     switch (typeid.GetTypeID())
                     {
-                        case RefineryRefreshType.WaterRecyclingSystem:
+                        case RefreshType.WaterRecyclingSystem:
                             if (bprints.ContainsKey(Ingot.WaterFood) && !bprints[Ingot.WaterFood].IfMax()) WaterRecyclingSystemManager();
                             else if (always_recycle_greywater && inventar.ContainsKey(Ingot.GreyWater) && inventar[Ingot.GreyWater] > 0) WaterRecyclingSystemManager(true);
                             else ClearInputInventoryIfControledByPIM();
                             break;
-                        case RefineryRefreshType.HydroponicsFarm:
+                        case RefreshType.HydroponicsFarm:
                             if (bprints.ContainsKey(Ingot.SubFresh) && !bprints[Ingot.SubFresh].IfMax()) HydrophonicsManager();
                             else ClearInputInventoryIfControledByPIM();
                             break;
-                        case RefineryRefreshType.Reprocessor:
+                        case RefreshType.Reprocessor:
                             if (bprints.ContainsKey(BluePrintID_SpentFuelReprocessing) && !bprints[BluePrintID_SpentFuelReprocessing].IfMax()) ReprocessorManager();
                             else ClearInputInventoryIfControledByPIM();
                             break;
-                        case RefineryRefreshType.VanillaRefinery:
+                        case RefreshType.VanillaRefinery:
                             VanillaRefineryManager();
                             if (fertig > 80 || IfForceManagerExecuting()) OfenFuellen();
                             OreSort();
@@ -2447,7 +2360,7 @@ namespace IngameScript
                 AddToInventory(OutputInventory);
                 if (!pms.ParseArgs(RefineryBlock.CustomName, true)) return;
                 var type = typeid.GetTypeID();
-                if (type == RefineryRefreshType.Incinerator)
+                if (type == RefreshType.Incinerator)
                 {
                     setWarning(Warning.ID.Incinerator);
                     return;
@@ -2471,11 +2384,36 @@ namespace IngameScript
                     if (InputInventory.ItemCount == 0)
                     {
                         RefineryBlock.Enabled = (refinerys_off && !pms.isPM("Nooff")) ? false : true;
+                        DeleteRefError(RefError.NotFilled);
                     }
                     else RefineryBlock.Enabled = true;
                     ClearInventory(OutputInventory);
+                    SetErrorByCondition(RefError.OutputNotEmpty, OutputInventory.CurrentVolume > 0);
                     fertig = 100 - (int)((InputInventory.CurrentVolume.RawValue * 100) / InputInventory.MaxVolume.RawValue);
                 }
+            }
+            const string RefError_NotFilled = " could not be filled\n";
+            const string RefError_OutputNotEmpty = " cannot empty output.\n";
+            void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
+            void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
+            void SetErrorByCondition(RefError error, bool condition) { if (condition) AddRefError(error); else DeleteRefError(error); }
+            public string GetRefErrorInfo()
+            {
+                if (pms.Control() && ErrorList.Count > 0)
+                {
+                    var errorstring = pms.Name;
+                    foreach(var error in ErrorList)
+                    {
+                        switch (error)
+                        {
+                            case RefError.OutputNotEmpty: errorstring += RefError_OutputNotEmpty; break;
+                            case RefError.NotFilled: errorstring += RefError_NotFilled; break;
+                            default: errorstring += "unknown error\n"; break;
+                        }
+                    }
+                    return errorstring;
+                }
+                return "";
             }
             public void FlushAllInventorys() { ClearInventory(InputInventory); ClearInventory(OutputInventory); }
             public void ClearInputInventoryIfControledByPIM() { if (pms.Control()) ClearInventory(InputInventory); }
@@ -2497,13 +2435,13 @@ namespace IngameScript
                 float nwaf = 0f;
                 switch (typeid.GetTypeID())
                 {
-                    case RefineryRefreshType.HydroponicsFarm:
+                    case RefreshType.HydroponicsFarm:
                         CalculateRefineryAmount(Ingot.SubFresh);
                         break;
-                    case RefineryRefreshType.WaterRecyclingSystem:
+                    case RefreshType.WaterRecyclingSystem:
                         CalculateRefineryAmount(Ingot.WaterFood);
                         break;
-                    case RefineryRefreshType.Reprocessor:
+                    case RefreshType.Reprocessor:
                         CalculateRefineryAmount(BluePrintID_SpentFuelReprocessing);
                         break;
                 }
@@ -2539,6 +2477,7 @@ namespace IngameScript
                     if (inventar.ContainsKey(newworkBP.InputID)) gefuellt = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
                     if (gefuellt) break;
                     else if (Erzklau(newworkBP)) gefuellt = true;
+                    SetErrorByCondition(RefError.NotFilled, !gefuellt);
                 }
                 if (gefuellt) SetIngotPrio(ip, newworkBP, cn);
             }
@@ -2659,6 +2598,7 @@ namespace IngameScript
             }
         }
 
+        static Dictionary<string, List<IPrio>> ingotprio = new Dictionary<string, List<IPrio>>();
         //Ip
         public class IPrio : IComparable<IPrio>
         {
@@ -2759,9 +2699,7 @@ namespace IngameScript
                 return false;
             }
         }
-        static Dictionary<string, List<IPrio>> ingotprio = new Dictionary<string, List<IPrio>>();
 
-        static List<RefineryBlueprint> refineryBlueprints = new List<RefineryBlueprint>();
         static string GetTimeStringFromHours(double h)
         {
             if (h < 1)
@@ -2780,104 +2718,6 @@ namespace IngameScript
             }
             if (tage < 1.1) return tage + " day";
             else return tage + " days";
-        }
-        public class RefineryBlueprint
-        {
-            public static void FillInputOutputAmountAndETA()
-            {
-                if ((DateTime.Now - fillTimestamp).TotalSeconds > 12)
-                {
-                    fillTimestamp = DateTime.Now;
-                    foreach (var b in refineryBlueprints)
-                    {
-                        var OldInputAmount = b.InputAmount;
-                        b.InputAmount = inventar.GetValueOrDefault(b.InputID, 0);
-                        b.OutputAmount = inventar.GetValueOrDefault(b.OutputID, 0);
-                        var OldAmountSnapshot = b.AmountSnapshot;
-                        b.AmountSnapshot = DateTime.Now;
-                        var diff = (OldInputAmount - b.InputAmount);
-                        b.etaString = diff < 0 ? "..." : GetTimeStringFromHours((b.InputAmount / diff) * (b.AmountSnapshot - OldAmountSnapshot).TotalHours);
-                    }
-                }
-            }
-            static DateTime fillTimestamp = DateTime.Now;
-            static string[] ScrapTypeBlueprintNames = { "Component C100ShellCasing", Ore.Scrap, Ingot.Scrap };
-            static MyItemType[] ScrapItemTypes;
-            static Dictionary<MyItemType, RefineryBlueprint> knowScrapTypes = new Dictionary<MyItemType, RefineryBlueprint>();
-            public static RefineryBlueprint GetRefineryBlueprintByItemtypeOrCreateNew(MyItemType scrapType)
-            {
-                if (!knowScrapTypes.ContainsKey(scrapType))
-                {
-                    knowScrapTypes.Add(scrapType, new RefineryBlueprint(scrapType));
-                    refineryBlueprints.Add(knowScrapTypes[scrapType]);
-                }
-                return knowScrapTypes[scrapType];
-            }
-            public static bool IsKnowScrapType(MyItemType scrapType)
-            {
-                return ScrapItemTypes.Contains(scrapType);
-            }
-            public static void InitScrapTypeBlueprintTypes()
-            {
-                ScrapItemTypes = new MyItemType[ScrapTypeBlueprintNames.Length];
-                for (int i = 0; i < ScrapTypeBlueprintNames.Length; i++)
-                {
-                    var t = ScrapTypeBlueprintNames[i];
-                    var parts = t.Split(' ');
-                    var newType = MyItemType.Parse(IG_ + parts[0] + "/" + parts[1]);
-                    ScrapItemTypes[i] = newType;
-                }
-            }
-            // ----------------------------------------------------------------------------------------------------------------
-            public MyDefinitionId Definition_id;
-            public string Name = "";
-            public string InputID = "";
-            public string InputIDName = "";
-            public float InputAmount = 0;
-            public string OutputID = "";
-            public string OutputIDName = "";
-            public float OutputAmount = 0;
-            public DateTime AmountSnapshot = DateTime.Now;
-            public string etaString = "";
-            public int RefineryCount = 0;
-            public bool IsScrap = false;
-            public RefineryBlueprint(MyDefinitionId iDefinitionID, string iInputID, string iOutputID)
-            {
-                Definition_id = iDefinitionID;
-                Name = iDefinitionID.SubtypeName;
-                InputID = iInputID;
-                InputIDName = CastResourceName(InputID);
-                OutputID = iOutputID;
-                OutputIDName = CastResourceName(OutputID);
-                IsScrap = ScrapTypeBlueprintNames.Contains(InputID);
-            }
-            public RefineryBlueprint(MyItemType iScrapType) // add AWWScrap Ore
-            {
-                InputID = GetPIMItemID(iScrapType);
-                InputIDName = iScrapType.SubtypeId;
-                Name = InputIDName + "ToIngots";
-                IsScrap = true;
-            }
-        }
-        static void AddRefineryBlueprint(string bpName, string inputItem, string outputItem)
-        {
-            MyDefinitionId id;
-            if (!MyDefinitionId.TryParse("MyObjectBuilder_BlueprintDefinition/" + bpName, out id)) return;
-            if (refineryBlueprints.Find(b => b.Definition_id == id) == null)
-            {
-                refineryBlueprints.Add(new RefineryBlueprint(id, inputItem, outputItem));
-            }
-        }
-        static void AddRefineryBlueprintOreToIngot(string resource)
-        {
-            AddRefineryBlueprint(resource + "OreToIngot", "Ore " + resource, "Ingot " + resource);
-        }
-        static void AddRefineryBlueprintsArray(string[] resArray, string bpNamePrefix, string bpNameSuffix, string inputNamePrefix, string outputNamePrefix)
-        {
-            foreach (var bp in resArray)
-            {
-                AddRefineryBlueprint(bpNamePrefix + bp + bpNameSuffix, inputNamePrefix + bp, outputNamePrefix + bp);
-            }
         }
         void CalcIngotPrio()
         {
@@ -2904,7 +2744,6 @@ namespace IngameScript
             }
             LoadAndRenderOrePrioDefs();
         }
-        static Dictionary<string, Dictionary<RefineryBlueprint, int>> orePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
         const string OrePrioDefString = "(sms,oreprio)";
         const string ResourcenOverview = "(sms,refining)";
         const string Autocrafting = "(sms,autocrafting)";
@@ -3072,7 +2911,7 @@ namespace IngameScript
             if (lcds.Count > 0)
             {
                 RefineryBlueprint.FillInputOutputAmountAndETA(); // ToDo: nicht bei jedem cycle berechnen!!!
-                var oresList = "                               Refiningprogress:\n" + line2lineonly + "\n";
+                var oresList = " Refiningprogress:\n" + line2lineonly + "\n";
                 foreach (var bluePrint in refineryBlueprints) // ToDo: Stone to Gravel doppelt!
                 {
                     if (bluePrint.RefineryCount > 0)
