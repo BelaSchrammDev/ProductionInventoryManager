@@ -1,0 +1,9 @@
+// IO Mod
+place Programmable Block
+load script
+place LCD with (sms,oreprio)
+add Refinery
+name refinery with sms
+show not all recipes its showing
+activate IO Modsupport on Config of PIM
+now show all the recipes an the lcd
