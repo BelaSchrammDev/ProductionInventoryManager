@@ -841,7 +841,7 @@ namespace IngameScript
             var DebugText = "";
             foreach (var item in bprints.Values)
             {
-                DebugText += " # " + item.AutoCraftingName + " -> " + item.ItemPriority +"\n";
+                DebugText += " # " + item.AutoCraftingName + " -> " + item.ItemPriority + "\n";
             }
             return DebugText;
         }
@@ -2141,7 +2141,7 @@ namespace IngameScript
 
 
             public enum RefreshType { Unknow, VanillaRefinery, WaterRecyclingSystem, HydroponicsFarm, Reprocessor, Incinerator, }
-            public enum RefError { NotFilled, OutputNotEmpty, }
+            public enum RefError { NotFilled, OutputNotEmpty, Damaged, }
             IMyInventory InputInventory, OutputInventory;
             public Dictionary<string, float> InputInventoryItems = new Dictionary<string, float>();
             public TypeDefinitions typeid;
@@ -2155,7 +2155,7 @@ namespace IngameScript
             RefineryBlueprint NextWorkBluePrint = null;
             float CurrentWorkOreAmount = 0;
             float NexWorkOreAmount = 0;
-            
+
             public class TypeDefinitions
             {
                 string TypeIDName;
@@ -2377,6 +2377,7 @@ namespace IngameScript
                     if (!refineryTypesAcceptedBlueprintsList.ContainsKey(BlockSubType)) refineryTypesAcceptedBlueprintsList.Add(BlockSubType, AcceptedBlueprints);
                 }
                 GetWorkItems();
+                SetErrorByCondition(RefError.Damaged, !RefineryBlock.IsFunctional);
                 if (RefineryBlock.IsFunctional)
                 {
                     cn++;
@@ -2392,28 +2393,24 @@ namespace IngameScript
                     fertig = 100 - (int)((InputInventory.CurrentVolume.RawValue * 100) / InputInventory.MaxVolume.RawValue);
                 }
             }
-            const string RefError_NotFilled = " could not be filled\n";
-            const string RefError_OutputNotEmpty = " cannot empty output.\n";
+            static Dictionary<RefError, string> RefErrors = new Dictionary<RefError, string>
+            {
+                { RefError.NotFilled, " could not be filled\n"},
+                { RefError.OutputNotEmpty, " cannot empty output.\n"},
+                { RefError.Damaged, " is damaged.\n"}
+            };
             void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
             void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
             void SetErrorByCondition(RefError error, bool condition) { if (condition) AddRefError(error); else DeleteRefError(error); }
             public string GetRefErrorInfo()
             {
-                if (pms.Control() && ErrorList.Count > 0)
+                if (!pms.Control() && ErrorList.Count == 0) return "";
+                var errorstring = "";
+                foreach (var estring in ErrorList)
                 {
-                    var errorstring = pms.Name;
-                    foreach(var error in ErrorList)
-                    {
-                        switch (error)
-                        {
-                            case RefError.OutputNotEmpty: errorstring += RefError_OutputNotEmpty; break;
-                            case RefError.NotFilled: errorstring += RefError_NotFilled; break;
-                            default: errorstring += "unknown error\n"; break;
-                        }
-                    }
-                    return errorstring;
+                    errorstring += pms.Name + RefErrors.GetValueOrDefault(estring, ": unknown error\n");
                 }
-                return "";
+                return errorstring;
             }
             public void FlushAllInventorys() { ClearInventory(InputInventory); ClearInventory(OutputInventory); }
             public void ClearInputInventoryIfControledByPIM() { if (pms.Control()) ClearInventory(InputInventory); }
@@ -2557,7 +2554,7 @@ namespace IngameScript
                 if (RefineryBlock.GetInventory(0).IsFull) return false;
                 return AcceptedBlueprints.Contains(ore);
             }
-            enum RefineryManagerState { NONE, CLEAR_INPUT, SWAP_ORES,};
+            enum RefineryManagerState { NONE, CLEAR_INPUT, SWAP_ORES, };
             RefineryManagerState RMS = RefineryManagerState.NONE;
             void VanillaRefineryManager()
             {
@@ -2733,7 +2730,7 @@ namespace IngameScript
                         else
                         {
                             var oreamount = inventar[refBluePrint.InputID];
-                            var ingotamount = inventar.GetValueOrDefault(refBluePrint.OutputID,0);
+                            var ingotamount = inventar.GetValueOrDefault(refBluePrint.OutputID, 0);
                             if (ingotamount == 0) addPrio(refSubType, refBluePrint, 200);
                             else if (ingotamount < 500) addPrio(refSubType, refBluePrint, 150);
                             else if (ingotamount < oreamount) addPrio(refSubType, refBluePrint, 100 - (int)(ingotamount / (oreamount / 97.0f)));
@@ -2975,7 +2972,7 @@ namespace IngameScript
         void addPrio(string reftype, RefineryBlueprint type, int prio)
         {
             if (prio == 0) prio = 1;
-            if(ingotprio.ContainsKey(reftype))
+            if (ingotprio.ContainsKey(reftype))
             {
                 IPrio.getPrio(ingotprio[reftype], type, true).setPrio(prio);
             }
