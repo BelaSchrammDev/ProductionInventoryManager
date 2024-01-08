@@ -62,6 +62,7 @@ namespace IngameScript
             public Warning(ID warn_ID, string isubtype = "") : base(ViewType.WARNING) { w_ID = warn_ID; subType = isubtype; }
             public override string GetInfoText()
             {
+                var testsb = new StringBuilder(300);
                 switch (w_ID)
                 {
                     case ID.RefineryNotSupportet: return "refinery '" + subType + "' not supported.";
@@ -91,20 +92,22 @@ namespace IngameScript
         }
         class RefineryManagerInfo : View
         {
+            StringBuilder errString = new StringBuilder(1000);
             public override string GetInfoText()
             {
-                var errorstring = "";
-                foreach (var o in oefen) errorstring += o.GetRefErrorInfo();
-                return errorstring == "" ? "" : "RefineryManager:\n" + errorstring;
+                errString.Clear();
+                foreach (var o in oefen) o.GetRefErrorInfo(errString);
+                return errString.Length == 0 ? "" : "RefineryManager:\n" + errString.ToString();
             }
         }
         class AssemblerManagerInfo : View
         {
+            StringBuilder errString = new StringBuilder(500);
             public override string GetInfoText()
             {
-                var errorstring = "";
-                foreach (var o in okumas) errorstring += o.GetAssemblerErrorInfo();
-                return errorstring == "" ? "" : "AssemblerManager:\n" + errorstring;
+                errString.Clear();
+                foreach (var o in okumas) errString.Append(o.GetAssemblerErrorInfo());
+                return errString.Length == 0 ? "" : errString.ToString();
             }
         }
         static void setInfo(string warnungstext, int zeit = 10)

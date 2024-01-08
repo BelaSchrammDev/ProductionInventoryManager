@@ -1828,6 +1828,7 @@ namespace IngameScript
             public Parameter pms = new Parameter();
             public IMyAssembler AssemblerBlock;
             bool outputInventoryNotEmpty = false;
+            StringBuilder errString = new StringBuilder();
             bool IsSurvivalKit = false;
             bool RemoveItemMode = false;
             public Assembler(IMyAssembler a)
@@ -1873,10 +1874,11 @@ namespace IngameScript
                 }
                 return ret;
             }
-            public string GetAssemblerErrorInfo()
+            public StringBuilder GetAssemblerErrorInfo()
             {
-                if (outputInventoryNotEmpty) return pms.Name + " cannot empty output.\n";
-                return "";
+                errString.Clear();
+                if (outputInventoryNotEmpty) errString.Append(pms.Name + " cannot empty output.\n");
+                return errString;
             }
             public void Refresh()
             {
@@ -2402,15 +2404,13 @@ namespace IngameScript
             void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
             void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
             void SetErrorByCondition(RefError error, bool condition) { if (condition) AddRefError(error); else DeleteRefError(error); }
-            public string GetRefErrorInfo()
+            public void GetRefErrorInfo(StringBuilder errString)
             {
-                if (!pms.Control() && ErrorList.Count == 0) return "";
-                var errorstring = "";
-                foreach (var estring in ErrorList)
+                if (!pms.Control() && ErrorList.Count == 0) return;
+                foreach (var error in ErrorList)
                 {
-                    errorstring += pms.Name + RefErrors.GetValueOrDefault(estring, ": unknown error\n");
+                    errString.Append(pms.Name + RefErrors.GetValueOrDefault(error, ": unknown error\n"));
                 }
-                return errorstring;
             }
             public void FlushAllInventorys() { ClearInventory(InputInventory); ClearInventory(OutputInventory); }
             public void ClearInputInventoryIfControledByPIM() { if (pms.Control()) ClearInventory(InputInventory); }
@@ -2474,7 +2474,7 @@ namespace IngameScript
                     if (inventar.ContainsKey(newworkBP.InputID)) gefuellt = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
                     if (gefuellt) break;
                     else if (Erzklau(newworkBP)) gefuellt = true;
-                    SetErrorByCondition(RefError.NotFilled, !gefuellt);
+                    SetErrorByCondition(RefError.NotFilled, !gefuellt && InputInventory.CurrentVolume == 0);
                 }
                 if (gefuellt) SetIngotPrio(ip, newworkBP, cn);
             }
