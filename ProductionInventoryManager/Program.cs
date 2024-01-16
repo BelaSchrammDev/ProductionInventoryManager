@@ -884,8 +884,8 @@ namespace IngameScript
                 switch (argument.ToLower())
                 {
                     case "flushrefinerys_all":
-                        foreach (var o in oefen) o.FlushAllInventorys();
-                        setInfo("all (" + oefen.Count + ") refinerys flushed.");
+                        foreach (var o in RefineryList) o.FlushAllInventorys();
+                        setInfo("all (" + RefineryList.Count + ") refinerys flushed.");
                         break;
                 }
                 return;
@@ -1270,13 +1270,13 @@ namespace IngameScript
                         foreach (var b in bprints.Values) b.AssemblyAmount = 0;
                         foreach (var b in bprints_pool.Values) b.AssemblyAmount = 0;
                         GridTerminalSystem.GetBlocksOfType<IMyRefinery>(raff, block => block.CubeGrid == Me.CubeGrid);
-                        for (int i = oefen.Count - 1; i >= 0; i--)
+                        for (int i = RefineryList.Count - 1; i >= 0; i--)
                         {
-                            if (raff.Contains(oefen[i].RefineryBlock)) raff.Remove(oefen[i].RefineryBlock);
+                            if (raff.Contains(RefineryList[i].RefineryBlock)) raff.Remove(RefineryList[i].RefineryBlock);
                             else
                             {
                                 changeAutoCraftingSettings = true;
-                                oefen.Remove(oefen[i]);
+                                RefineryList.Remove(RefineryList[i]);
                             }
                         }
                         Refinery.priobt = "";
@@ -1287,7 +1287,7 @@ namespace IngameScript
                         for (int i = m1; i >= 0; i--, m1--)
                         {
                             if (maxInstructions()) { writeInfo(); return; }
-                            oefen.Add(new Refinery(raff[i]));
+                            RefineryList.Add(new Refinery(raff[i]));
                         }
                         m0++;
                         break;
@@ -1357,10 +1357,10 @@ namespace IngameScript
                         m0++;
                         break;
                     case 44:
-                        for (int i = m1; i < oefen.Count; i++, m1++)
+                        for (int i = m1; i < RefineryList.Count; i++, m1++)
                         {
                             if (maxInstructions()) { writeInfo(); return; }
-                            oefen[i].Refresh();
+                            RefineryList[i].Refresh();
                         }
                         m0++;
                         break;
@@ -1372,10 +1372,10 @@ namespace IngameScript
                         m0++;
                         break;
                     case 46:
-                        for (int i = m1; i < oefen.Count; i++, m1++)
+                        for (int i = m1; i < RefineryList.Count; i++, m1++)
                         {
                             if (maxInstructions()) { writeInfo(); return; }
-                            oefen[i].RefineryManager();
+                            RefineryList[i].RefineryManager();
                         }
                         m0++;
                         break;
@@ -2036,7 +2036,7 @@ namespace IngameScript
         class Gun : storageInventory
         {
             public IMyUserControllableGun gun = null;
-            public string curAmmo = "";
+            public string CurrentAmmo = "";
             public string gunType = "";
             List<AmmoDefs> ammoTypesDefinition = new List<AmmoDefs>();
             public Dictionary<string, int> ammomax = new Dictionary<string, int>();
@@ -2075,39 +2075,39 @@ namespace IngameScript
             {
                 if (gun is IMyLargeInteriorTurret) return false;
                 // zum testen..................
-                if (curAmmo == "") return false;
-                int aamount = (int)(ammomax[curAmmo] * ammoDefs[curAmmo].ratio);
+                if (CurrentAmmo == "") return false;
+                int aamount = (int)(ammomax[CurrentAmmo] * ammoDefs[CurrentAmmo].ratio);
                 if (aamount < 1) aamount = 1;
-                if (items.Count == 0) items.Add(curAmmo, aamount);
-                else if (!items.ContainsKey(curAmmo))
+                if (items.Count == 0) items.Add(CurrentAmmo, aamount);
+                else if (!items.ContainsKey(CurrentAmmo))
                 {
                     items.Clear();
-                    items.Add(curAmmo, aamount);
+                    items.Add(CurrentAmmo, aamount);
                 }
-                else items[curAmmo] = aamount;
+                else items[CurrentAmmo] = aamount;
                 return true;
             }
             public void Refresh()
             {
                 AddToInventory(inv);
-                var p = gun.GetProperty(X_UseConveyor);
-                if (p != null && gun.GetValue<bool>(X_UseConveyor)) gun.ApplyAction(X_UseConveyor);
-                curAmmo = GetAmmoPrio();
+                var propertyUseConveyor = gun.GetProperty(X_UseConveyor);
+                if (propertyUseConveyor != null && gun.GetValue<bool>(X_UseConveyor)) gun.ApplyAction(X_UseConveyor);
+                CurrentAmmo = GetAmmoPrio();
             }
             string GetAmmoPrio()
             {
-                var cura = "";
-                var curap = 0;
+                var currentAmmunition = "";
+                var currentAmmunitionValue = 0;
                 foreach (var a in ammomax)
                 {
                     var prio = getAmmoDefs(a.Key).GetAmmoPriority(gunType);
-                    if (prio > curap && inventar.ContainsKey(a.Key) && inventar[a.Key] > 0)
+                    if (prio > currentAmmunitionValue && inventar.ContainsKey(a.Key) && inventar[a.Key] > 0)
                     {
-                        cura = a.Key;
-                        curap = prio;
+                        currentAmmunition = a.Key;
+                        currentAmmunitionValue = prio;
                     }
                 }
-                return cura;
+                return currentAmmunition;
             }
             public void Remove()
             {
@@ -2127,8 +2127,8 @@ namespace IngameScript
                 if (p != null && !gun.GetValue<bool>(X_UseConveyor)) gun.ApplyAction(X_UseConveyor);
             }
         }
-        static List<Refinery> oefen = new List<Refinery>();
-        //Ofen
+        static List<Refinery> RefineryList = new List<Refinery>();
+        // refinerys
         public class Refinery
         {
             static public string priobt = "";
@@ -2143,7 +2143,7 @@ namespace IngameScript
 
 
             public enum RefreshType { Unknow, VanillaRefinery, WaterRecyclingSystem, HydroponicsFarm, Reprocessor, Incinerator, }
-            public enum RefError { NotFilled, OutputNotEmpty, Damaged, }
+            public enum RefError { NotFilled, OutputNotEmpty, Damaged, IncineratorNoAutofill }
             IMyInventory InputInventory, OutputInventory;
             public Dictionary<string, float> InputInventoryItems = new Dictionary<string, float>();
             public TypeDefinitions typeid;
@@ -2361,15 +2361,17 @@ namespace IngameScript
                 AddRefineryCount();
                 AddToInventory(OutputInventory);
                 if (!pms.ParseArgs(RefineryBlock.CustomName, true)) return;
-                var type = typeid.GetTypeID();
-                if (type == RefreshType.Incinerator)
+                if (typeid.GetTypeID() == RefreshType.Incinerator)
                 {
-                    setWarning(Warning.ID.Incinerator);
+                    if (typeid.GetTypeID() == RefreshType.Incinerator) AddRefError(RefError.IncineratorNoAutofill);
+                    ClearInventory(OutputInventory);
+                    SetErrorByCondition(RefError.OutputNotEmpty, OutputInventory.CurrentVolume > 0);
+                    SetErrorByCondition(RefError.Damaged, !RefineryBlock.IsFunctional);
                     return;
                 }
                 if (typeid.IsUnknowType())
                 {
-                    setWarning(Warning.ID.RefineryNotSupportet, pms.Name);
+                    setWarning(Warning.ID.RefineryNotSupportet, pms.Name.ToString());
                     return;
                 }
                 if (typeid.IsVanillaManagment())
@@ -2399,7 +2401,8 @@ namespace IngameScript
             {
                 { RefError.NotFilled, " could not be filled\n"},
                 { RefError.OutputNotEmpty, " cannot empty output.\n"},
-                { RefError.Damaged, " is damaged.\n"}
+                { RefError.Damaged, " is damaged.\n"},
+                { RefError.IncineratorNoAutofill, " is not filled by PIM.\n"},
             };
             void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
             void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
@@ -2485,7 +2488,7 @@ namespace IngameScript
                 else if (blueprint == NextWorkBluePrint) oamount = NexWorkOreAmount;
                 if (RefineryBlock.GetInventory(0).CurrentVolume.RawValue < 100)
                 {
-                    foreach (Refinery o in oefen)
+                    foreach (Refinery o in RefineryList)
                     {
                         int inum = 0;
                         var inventoryList = new List<MyInventoryItem>();
@@ -2639,18 +2642,20 @@ namespace IngameScript
         public class Parameter
         {
             public Dictionary<string, string> pml = new Dictionary<string, string>();
-            string bcn = "";
-            public string Name = "";
+            StringBuilder bcn = new StringBuilder(150);
+            public StringBuilder Name = new StringBuilder(150);
             bool smscontrol = false;
             public bool ParseArgs(string newa, bool cACd = false)
             {
-                if (newa == bcn) return smscontrol;
-                else bcn = newa;
+                if (StringBuilderContains(bcn, newa)) return smscontrol;
+                bcn.Clear();
+                bcn.Append(newa);
                 pml.Clear();
-                var args = bcn.ToLower();
+                var args = bcn.ToString().ToLower();
                 if (args.Contains("(sms"))
                 {
-                    Name = bcn.Substring(0, args.IndexOf("(sms"));
+                    StringBuilderSubstring(bcn, Name, 0, args.IndexOf("(sms"));
+                    StringBuilderTrim(Name);
                     foreach (var y in args.Split('('))
                     {
                         if (y.Contains("sms") && y.Contains(")"))
@@ -2670,7 +2675,8 @@ namespace IngameScript
                         }
                     }
                 }
-                Name = newa.Trim();
+                Name.Clear() ;
+                Name.Append(newa.Trim());
                 if (cACd && smscontrol == true) changeAutoCraftingSettings = true;
                 smscontrol = false;
                 return false;
@@ -2678,6 +2684,52 @@ namespace IngameScript
             public void addPM(string key, string value = "") { if (!isPM(key)) pml.Add(key, value); }
             public bool isPM(string tag) { return pml.ContainsKey(tag); }
             public bool Control() { return smscontrol; }
+            void StringBuilderToLower(StringBuilder sb) { for (int i = 0; i < sb.Length; i++) sb[i] = char.ToLower(sb[i]); }
+            bool StringBuilderContains(StringBuilder sb, string s) { return StringBuilderIndexOf(sb, s) != -1; }
+            int StringBuilderIndexOf(StringBuilder sb, string s)
+            {
+                int sIndex = 0;
+                int contains = 0;
+                int findIndex = -1;
+                for (int i = 0; sIndex < s.Length && i < sb.Length && i + (s.Length - sIndex) < sb.Length; i++, sIndex += contains)
+                {
+                    if (sb[i] == s[sIndex])
+                    {
+                        if (contains == 0) findIndex = i;
+                        contains = 1;
+                    }
+                    else { contains = 0; sIndex = 0; findIndex = -1; }
+                }
+                if (sIndex < s.Length - 1) findIndex = -1;
+                return findIndex;
+            }
+            void StringBuilderSubstring(StringBuilder sb, StringBuilder targetSB, int startindex, int lenght = -1)
+            {
+                targetSB.Clear();
+                if (startindex > sb.Length) return;
+                int endindex;
+                if (lenght > 0) endindex = startindex + lenght - 1;
+                else endindex = sb.Length - 1;
+                for (int i = startindex; i <= endindex; i++) targetSB.Append(sb[i]);
+            }
+            void StringBuilderTrim(StringBuilder sb)
+            {
+                int wsFromBegin = 0;
+                int wsFromEnd = 0;
+                for (int i = sb.Length - 1; i >= 0; i--)
+                {
+                    if (char.IsWhiteSpace(sb[i])) wsFromEnd++;
+                    else break;
+                }
+                for (int i = 0; i < sb.Length; i++)
+                {
+                    if (char.IsWhiteSpace(sb[i])) wsFromBegin++;
+                    else break;
+                }
+                sb.Remove(0, wsFromBegin);
+                sb.Remove(sb.Length - wsFromEnd, wsFromEnd);
+            }
+
         }
         //ST
         public class StopWatch

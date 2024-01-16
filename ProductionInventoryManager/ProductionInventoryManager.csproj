@@ -52,6 +52,7 @@
     <AdditionalFiles Include="MDK\whitelist.cache" />
     <Compile Include="RefineryBluePrints.cs" />
     <Compile Include="StatusMessage.cs" />
+    <Compile Include="StringBuilderExtended.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig">
