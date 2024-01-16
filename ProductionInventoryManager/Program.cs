@@ -55,7 +55,7 @@ namespace IngameScript
         static Dictionary<string, AssemblerBluePrint> bprints = new Dictionary<string, AssemblerBluePrint>();
         static Dictionary<string, AssemblerBluePrint> bprints_pool = new Dictionary<string, AssemblerBluePrint>();
         double currentCycleInSec = 0f; int m0 = 1; int m1, m2 = 0; List<string> s0; static IMyGridProgramRuntimeInfo rti; IMyProgrammableBlock master;
-        const string SI1 = "PIM v1.1", SI2 = "a beta (c) BelaOkuma\n", SMS = "SMS v1.4", X_StorageTag = "(sms,storage)";
+        const string SI1 = "PIM v1.1", SI2 = "a (c) BelaOkuma\n", SMS = "SMS v1.4", X_StorageTag = "(sms,storage)";
         const string X_Config = "### Config ###", X_Config_end = "### Config End ###", X_Line = "  / =================================\n", X_UseConveyor = "UseConveyor";
         const string X_Autocrafting_treshold = "Autocrafting_threshold";
         const string M_Vanilla = "Vanilla", M_HSR = "HSR_Mod", M_NorthWindWeapons = "NorthWindWeaponsMod", M_AryxEpsteinDrive = "AryxEpsteinDriveMod", M_PlantCook = "PlantAndCookMod", M_EatDrinkSleep = "EatDrinkSleepRepeatMod", M_IndustrialOverhaulLLMod = "IndustrialOverhaulLockLoadMod", M_IndustrialOverhaulWaterMod = "IndustrialOverhaulWaterMod", M_IndustrialOverhaulMod = "IndustrialOverhaulMod", M_DailyNeedsSurvival = "DailyNeedsSurvivalMod", M_AzimuthThruster = "AzimuthThrusterMod", M_SG_Gates = "StarGateMod_Gates", M_SG_Ores = "StarGateMod_Ores", M_PaintGun = "PaintGunMod", M_DeuteriumReactor = "DeuteriumReactorMod", M_Shield = "DefenseShieldMod", M_RailGun = "MCRN_RailGunMod", M_HomingWeaponry = "MWI_HomingWeaponryMod";
@@ -849,7 +849,7 @@ namespace IngameScript
         string Debug_RefineryRecipes()
         {
             string DebugText = "Refineryrecipes\n";
-            foreach (var refRecipe in refineryBlueprints)
+            foreach (var refRecipe in RefineryBlueprints)
             {
                 DebugText += refRecipe.Name + " : " + refRecipe.InputIDName + " -> " + refRecipe.OutputIDName + "\n";
             }
@@ -1352,7 +1352,7 @@ namespace IngameScript
                         break;
                     case 43:
                         Refinery.cn = 0;
-                        foreach (var b in refineryBlueprints) b.RefineryCount = 0;
+                        foreach (var b in RefineryBlueprints) b.RefineryCount = 0;
                         m1 = 0;
                         m0++;
                         break;
@@ -2228,7 +2228,7 @@ namespace IngameScript
                 BlockSubType = refinery.BlockDefinition.SubtypeId;
                 typeid = TypeDefs.Find(t => t.CompareTypeName(BlockSubType));
                 BlockSubType = typeid.GetAlternativOrDefaultName();
-                AcceptedBlueprints = refineryBlueprints.FindAll(b => RefineryBlock.CanUseBlueprint(b.Definition_id));
+                AcceptedBlueprints = RefineryBlueprints.FindAll(b => RefineryBlock.CanUseBlueprint(b.Definition_id));
                 GetScrapBluePrints();
             }
             void GetScrapBluePrints()
@@ -2237,7 +2237,7 @@ namespace IngameScript
                 InputInventory.GetAcceptedItems(acceptedItems, i => i.SubtypeId.ToLower().Contains("scrap") && !RefineryBlueprint.IsKnowScrapType(i));
                 foreach (var inventoryItem in acceptedItems)
                 {
-                    var scrapBlueprint = RefineryBlueprint.GetRefineryBlueprintByItemtypeOrCreateNew(inventoryItem);
+                    var scrapBlueprint = RefineryBlueprint.GetScrapBlueprintByItemtypeOrCreateNew(inventoryItem);
                     if (!AcceptedBlueprints.Contains(scrapBlueprint)) AcceptedBlueprints.Add(scrapBlueprint);
                 }
             }
@@ -2818,7 +2818,7 @@ namespace IngameScript
                         if (line.Length == 0 || line[0].Length == 0 || line[0][0] == '/') continue;
                         if (line.Length >= 5 && line[3].ToLower().StartsWith("oreprio") && (curPrioList != null))
                         {
-                            var blueprint = refineryBlueprints.Find(b => b.Name == line[4]);
+                            var blueprint = RefineryBlueprints.Find(b => b.Name == line[4]);
                             if (blueprint != null)
                             {
                                 int prio = -1;
@@ -2838,14 +2838,14 @@ namespace IngameScript
                             curRefineryType = "";
                             if ((line[1] != "") && Refinery.refineryTypesAcceptedBlueprintsList.ContainsKey(line[1]))
                             {
-                                if (orePrioConfig.ContainsKey(line[1]))
+                                if (OrePrioConfig.ContainsKey(line[1]))
                                 {
-                                    curPrioList = orePrioConfig[line[1]];
+                                    curPrioList = OrePrioConfig[line[1]];
                                 }
                                 else
                                 {
                                     curPrioList = new Dictionary<RefineryBlueprint, int>();
-                                    orePrioConfig.Add(line[1], curPrioList);
+                                    OrePrioConfig.Add(line[1], curPrioList);
                                 }
                                 curRefineryType = line[1];
                             }
@@ -2880,7 +2880,7 @@ namespace IngameScript
                 var priolist = "/ Orepriorityconfig:\n/ only refinerytypes with '(sms)' in the name are displayed.\n\n/ set the 'value' between 1 and 10000\n/ if value = 0 then the ore will be ignored\n/ if value empty then prio will be calculated by PIM.\n/ any type of scrap is always refined first\n\n/ Refinerytypefilter, separated by comma, '*' for all\n Filter: " + fString + "\n\n/                Recipe                       |    Value   |       Current\n";
                 foreach (var key in Refinery.refineryTypesAcceptedBlueprintsList.Keys)
                 {
-                    if (!orePrioConfig.ContainsKey(key)) orePrioConfig.Add(key, new Dictionary<RefineryBlueprint, int>());
+                    if (!OrePrioConfig.ContainsKey(key)) OrePrioConfig.Add(key, new Dictionary<RefineryBlueprint, int>());
                     var blueprintList = Refinery.refineryTypesAcceptedBlueprintsList[key].FindAll(o => !o.IsScrap);
                     if (blueprintList.Count < 2 || !filter.ifFilter(key)) continue;
                     priolist += linepur + "\n RefineryType: " + key + line;
@@ -2890,8 +2890,8 @@ namespace IngameScript
                     {
                         var priostr = "-1";
                         var curPrio = IPrio.getPrio(curIngotPrioList, bp);
-                        if (orePrioConfig[key].ContainsKey(bp)) priostr = orePrioConfig[key][bp].ToString();
-                        else orePrioConfig[key].Add(bp, -1);
+                        if (OrePrioConfig[key].ContainsKey(bp)) priostr = OrePrioConfig[key][bp].ToString();
+                        else OrePrioConfig[key].Add(bp, -1);
                         priolist += " "
                             + (getDisplayBoxString(bp.Name, 65, true))
                             + " | "
@@ -2959,9 +2959,9 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(lcds, block => block.CustomName.Contains(ResourcenOverview));
             if (lcds.Count > 0)
             {
-                RefineryBlueprint.FillInputOutputAmountAndETA(); // ToDo: nicht bei jedem cycle berechnen!!!
+                RefineryBlueprint.FillInputOutputAmountAndETA();
                 var oresList = " Refiningprogress:\n" + line2lineonly + "\n";
-                foreach (var bluePrint in refineryBlueprints) // ToDo: Stone to Gravel doppelt!
+                foreach (var bluePrint in RefineryBlueprints)
                 {
                     if (bluePrint.RefineryCount > 0)
                     {
@@ -2971,7 +2971,7 @@ namespace IngameScript
                             + getDisplayBoxString(bluePrint.InputIDName, bluePrint.InputAmount, 70)
                             + "\n"
                             + getDisplayBoxString(bluePrint.RefineryCount.ToString() + " Refinerys.", 30, true)
-                            + getDisplayBoxString("-> " + bluePrint.etaString, 40, true)
+                            + getDisplayBoxString("-> " + bluePrint.ETA_String, 40, true)
                             + " | "
                             + getDisplayBoxString(bluePrint.OutputIDName, bluePrint.OutputAmount, 70)
                             + "\n"

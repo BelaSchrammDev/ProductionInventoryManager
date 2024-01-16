@@ -22,8 +22,8 @@ namespace IngameScript
 {
     partial class Program
     {
-        static List<RefineryBlueprint> refineryBlueprints = new List<RefineryBlueprint>();
-        static Dictionary<string, Dictionary<RefineryBlueprint, int>> orePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
+        static List<RefineryBlueprint> RefineryBlueprints = new List<RefineryBlueprint>();
+        static Dictionary<string, Dictionary<RefineryBlueprint, int>> OrePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
 
         void InitRefineryBlueprints()
         {
@@ -100,40 +100,40 @@ namespace IngameScript
                 // CentrifugeIngots
                 AddRefineryBlueprintOreToIngot("Uranium");
             }
-            refineryBlueprints.Sort((x, y) => x.InputIDName.CompareTo(y.InputIDName));
+            RefineryBlueprints.Sort((x, y) => x.InputIDName.CompareTo(y.InputIDName));
         }
 
         public class RefineryBlueprint
         {
             public static void FillInputOutputAmountAndETA()
             {
-                if ((DateTime.Now - fillTimestamp).TotalSeconds > 12)
+                if ((DateTime.Now - FillTimestamp).TotalSeconds > 12)
                 {
-                    fillTimestamp = DateTime.Now;
-                    foreach (var b in refineryBlueprints)
+                    FillTimestamp = DateTime.Now;
+                    foreach (var bluePrint in RefineryBlueprints)
                     {
-                        var OldInputAmount = b.InputAmount;
-                        b.InputAmount = inventar.GetValueOrDefault(b.InputID, 0);
-                        b.OutputAmount = inventar.GetValueOrDefault(b.OutputID, 0);
-                        var OldAmountSnapshot = b.AmountSnapshot;
-                        b.AmountSnapshot = DateTime.Now;
-                        var diff = (OldInputAmount - b.InputAmount);
-                        b.etaString = diff < 0 ? "..." : GetTimeStringFromHours((b.InputAmount / diff) * (b.AmountSnapshot - OldAmountSnapshot).TotalHours);
+                        var OldInputAmount = bluePrint.InputAmount;
+                        bluePrint.InputAmount = inventar.GetValueOrDefault(bluePrint.InputID, 0);
+                        bluePrint.OutputAmount = inventar.GetValueOrDefault(bluePrint.OutputID, 0);
+                        var OldAmountSnapshot = bluePrint.AmountSnapshot;
+                        bluePrint.AmountSnapshot = DateTime.Now;
+                        var diff = (OldInputAmount - bluePrint.InputAmount);
+                        bluePrint.ETA_String = diff < 0 ? "..." : GetTimeStringFromHours((bluePrint.InputAmount / diff) * (bluePrint.AmountSnapshot - OldAmountSnapshot).TotalHours);
                     }
                 }
             }
-            static DateTime fillTimestamp = DateTime.Now;
+            static DateTime FillTimestamp = DateTime.Now;
             static string[] ScrapTypeBlueprintNames = { "Component C100ShellCasing", Ore.Scrap, Ingot.Scrap };
             static MyItemType[] ScrapItemTypes;
-            static Dictionary<MyItemType, RefineryBlueprint> knowScrapTypes = new Dictionary<MyItemType, RefineryBlueprint>();
-            public static RefineryBlueprint GetRefineryBlueprintByItemtypeOrCreateNew(MyItemType scrapType)
+            static Dictionary<MyItemType, RefineryBlueprint> KnowScrapTypes = new Dictionary<MyItemType, RefineryBlueprint>();
+            public static RefineryBlueprint GetScrapBlueprintByItemtypeOrCreateNew(MyItemType scrapType)
             {
-                if (!knowScrapTypes.ContainsKey(scrapType))
+                if (!KnowScrapTypes.ContainsKey(scrapType))
                 {
-                    knowScrapTypes.Add(scrapType, new RefineryBlueprint(scrapType));
-                    refineryBlueprints.Add(knowScrapTypes[scrapType]);
+                    KnowScrapTypes.Add(scrapType, new RefineryBlueprint(scrapType));
+                    RefineryBlueprints.Add(KnowScrapTypes[scrapType]);
                 }
-                return knowScrapTypes[scrapType];
+                return KnowScrapTypes[scrapType];
             }
             public static bool IsKnowScrapType(MyItemType scrapType)
             {
@@ -155,12 +155,12 @@ namespace IngameScript
             public string Name = "";
             public string InputID = "";
             public string InputIDName = "";
-            public float InputAmount = 0;
             public string OutputID = "";
             public string OutputIDName = "";
+            public float InputAmount = 0;
             public float OutputAmount = 0;
-            public DateTime AmountSnapshot = DateTime.Now;
-            public string etaString = "";
+            DateTime AmountSnapshot = DateTime.Now;
+            public string ETA_String = "";
             public int RefineryCount = 0;
             public bool IsScrap = false;
             public RefineryBlueprint(MyDefinitionId iDefinitionID, string iInputID, string iOutputID)
@@ -185,9 +185,9 @@ namespace IngameScript
         {
             MyDefinitionId id;
             if (!MyDefinitionId.TryParse("MyObjectBuilder_BlueprintDefinition/" + bpName, out id)) return;
-            if (refineryBlueprints.Find(b => b.Definition_id == id) == null)
+            if (RefineryBlueprints.Find(b => b.Definition_id == id) == null)
             {
-                refineryBlueprints.Add(new RefineryBlueprint(id, inputItem, outputItem));
+                RefineryBlueprints.Add(new RefineryBlueprint(id, inputItem, outputItem));
             }
         }
         static void AddRefineryBlueprintOreToIngot(string resource)
