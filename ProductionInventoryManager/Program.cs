@@ -2396,7 +2396,11 @@ namespace IngameScript
                         RefineryBlock.Enabled = (refinerys_off && !pms.isPM("Nooff")) ? false : true;
                         DeleteRefError(RefError.NotFilled);
                     }
-                    else RefineryBlock.Enabled = true;
+                    else
+                    {
+                        RefineryBlock.Enabled = true;
+                        if (InputInventory.CurrentVolume > 0) DeleteRefError(RefError.NotFilled);
+                    }
                     ClearInventory(OutputInventory);
                     SetErrorByCondition(RefError.OutputNotEmpty, OutputInventory.CurrentVolume > 0);
                     fertig = 100 - (int)((InputInventory.CurrentVolume.RawValue * 100) / InputInventory.MaxVolume.RawValue);
@@ -2469,7 +2473,7 @@ namespace IngameScript
             }
             void OfenFuellen()
             {
-                bool gefuellt = false;
+                bool refineryFilled = false;
                 RefineryBlueprint newworkBP = null;
                 List<IPrio> ip = ingotprio[BlockSubType];
                 for (int i = 0; i < ip.Count; i++)
@@ -2479,12 +2483,11 @@ namespace IngameScript
                     newworkBP = p.refineryBP;
                     if (fertig < 50) ClearInputInventoryIfControledByPIM();
                     var types = newworkBP.InputID.Split(' ');
-                    if (inventar.ContainsKey(newworkBP.InputID)) gefuellt = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
-                    if (gefuellt) break;
-                    else if (Erzklau(newworkBP)) gefuellt = true;
-                    SetErrorByCondition(RefError.NotFilled, !gefuellt && InputInventory.CurrentVolume == 0);
+                    if (inventar.ContainsKey(newworkBP.InputID)) refineryFilled = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
+                    if(!refineryFilled) refineryFilled = Erzklau(newworkBP);
+                    SetErrorByCondition(RefError.NotFilled, !refineryFilled && InputInventory.CurrentVolume == 0);
                 }
-                if (gefuellt) SetIngotPrio(ip, newworkBP, cn);
+                if (refineryFilled) SetIngotPrio(ip, newworkBP, cn);
             }
             bool Erzklau(RefineryBlueprint blueprint)
             {
