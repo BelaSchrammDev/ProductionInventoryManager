@@ -30,7 +30,7 @@ namespace IngameScript
             public enum ViewType { NONE, INFO, WARNING, ERROR }
             DateTime burn = DateTime.Now;
             public ViewType type = ViewType.NONE;
-            int lebenssekunden = -1;
+            int SecondsToLive = -1;
             string infotext = "";
             public View()
             {
@@ -44,11 +44,11 @@ namespace IngameScript
             {
                 infotext = itext;
                 type = itype;
-                lebenssekunden = sec;
+                SecondsToLive = sec;
             }
             public virtual string GetInfoText() { return infotext; }
-            public bool IsOver() { if (lebenssekunden == -1) return false; if ((DateTime.Now - burn).TotalSeconds > lebenssekunden) return true; return false; }
-            public void SetOver() { lebenssekunden = 0; }
+            public bool IsOver() { if (SecondsToLive == -1) return false; if ((DateTime.Now - burn).TotalSeconds > SecondsToLive) return true; return false; }
+            public void SetOver() { SecondsToLive = 0; }
         }
         class Info : View
         {
@@ -102,12 +102,12 @@ namespace IngameScript
         }
         class AssemblerManagerInfo : View
         {
-            StringBuilder errString = new StringBuilder(500);
+            StringBuilder errString = new StringBuilder(1000);
             public override string GetInfoText()
             {
                 errString.Clear();
                 foreach (var o in okumas) errString.Append(o.GetAssemblerErrorInfo());
-                return errString.Length == 0 ? "" : errString.ToString();
+                return errString.Length == 0 ? "" : "AssemblerManager:\n" + errString.ToString();
             }
         }
         static void setInfo(string warnungstext, int zeit = 10)
@@ -135,26 +135,25 @@ namespace IngameScript
             var w = getWarning(warnID, subtype);
             if (w != null) w.SetOver();
         }
-        string getInfos()
+        StringBuilderExtended infoString = new StringBuilderExtended(1000);
+        StringBuilderExtended warnungstring = new StringBuilderExtended(500);
+        StringBuilderExtended errorstring = new StringBuilderExtended(500);
+        void calcInfos()
         {
-            var infostring = "\n";
-            var warnungstring = "";
-            var errorstring = "";
+            infoString.SetText("\n");
+            warnungstring.Clear();
+            errorstring.Clear();
             foreach (var v in viewList)
             {
                 switch (v.type)
                 {
-                    case View.ViewType.INFO:
-                        var s = v.GetInfoText();
-                        infostring += s + (s == "" ? "" : "\n");
-                        break;
-                    case View.ViewType.WARNING: warnungstring += v.GetInfoText() + "\n"; break;
-                    case View.ViewType.ERROR: errorstring += v.GetInfoText() + "\n"; break;
+                    case View.ViewType.INFO: infoString.AppendLFifNotEmpty(v.GetInfoText()); break;
+                    case View.ViewType.WARNING: warnungstring.AppendLF(v.GetInfoText()); break;
+                    case View.ViewType.ERROR: errorstring.AppendLF(v.GetInfoText()); break;
                 }
             }
-            if (warnungstring != "") infostring += "Warning:\n" + warnungstring;
-            if (errorstring != "") infostring += "Errors:\n" + errorstring;
-            return infostring;
+            if (!warnungstring.IsEmpty()) infoString.Append("Warning:\n" + warnungstring);
+            if (!errorstring.IsEmpty()) infoString.Append("Errors:\n" + errorstring);
         }
     }
 }

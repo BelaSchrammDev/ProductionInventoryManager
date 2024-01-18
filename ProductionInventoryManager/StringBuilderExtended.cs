@@ -58,7 +58,12 @@ namespace IngameScript
                 else endindex = sb.Length - 1;
                 for (int i = startindex; i <= endindex; i++) targetSB.Append(sb[i]);
             }
-            public void SetText(string text) { sb.Clear(); sb.Append(text); }
+            public bool IsEmpty() { return sb.Length == 0; }
+            public void Append(string text) { sb.Append(text); }
+            public void AppendLF(string text) { Append(text + "\n"); }
+            public void AppendLFifNotEmpty(string text) { if (text.Length > 0) AppendLF(text); }
+            public void Clear() { sb.Clear(); }
+            public void SetText(string text) { Clear(); Append(text); }
             public void ToLower() { for (int i = 0; i < sb.Length; i++) sb[i] = char.ToLower(sb[i]); }
             public bool Contains(string s) { return IndexOf(s) != -1; }
             public int IndexOf(string s)

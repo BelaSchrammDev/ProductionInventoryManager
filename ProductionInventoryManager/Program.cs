@@ -782,7 +782,7 @@ namespace IngameScript
         }
         void writeInfo()
         {
-            var s = SI1 + SI2 + getRunningSign() + (master == null ? (" Running / " + MAXIC + " inst. per run\ncurrent cycle: " + currentCycleInSec.ToString("0.0") + " sec.\n" + getInfos()) : "Standby\nMaster: " + master.CustomName);
+            var s = SI1 + SI2 + getRunningSign() + (master == null ? (" Running / " + MAXIC + " inst. per run\ncurrent cycle: " + currentCycleInSec.ToString("0.0") + " sec.\n" + infoString) : "Standby\nMaster: " + master.CustomName);
             Echo(s);
             if (ShowInfoPBLcd)
             {
@@ -887,6 +887,10 @@ namespace IngameScript
                         foreach (var o in RefineryList) o.FlushAllInventorys();
                         setInfo("all (" + RefineryList.Count + ") refinerys flushed.");
                         break;
+                    default:
+                        setInfo("unknow command: \"" + argument + "\"");
+                        break;
+
                 }
                 return;
             }
@@ -1477,6 +1481,7 @@ namespace IngameScript
                                 clearWarning(Warning.ID.CARGOUSEFULL, c);
                             }
                         }
+                        calcInfos();
                         firstRun = false;
                         m0 = 0;
                         break;
@@ -1718,9 +1723,9 @@ namespace IngameScript
                 var fullid = idstr[1] + " " + stype;
                 var atype = TypeCast(fullid);
                 if (InventoryManagerList.ContainsKey(fullid)) success = SendItemByNum(quelle, j, InventoryManagerList[fullid]);
-                else if (atype != "" && InventoryManagerList.ContainsKey(atype)) success = SendItemByNum(quelle, j, InventoryManagerList[atype]);
-                else if (InventoryManagerList.ContainsKey(idstr[1])) success = SendItemByNum(quelle, j, InventoryManagerList[idstr[1]]);
-                if (success) clearWarning(Warning.ID.CargoMissing, idstr[1]);
+                if (!success && atype != "" && InventoryManagerList.ContainsKey(atype)) success = SendItemByNum(quelle, j, InventoryManagerList[atype]);
+                if (!success && InventoryManagerList.ContainsKey(idstr[1])) success = SendItemByNum(quelle, j, InventoryManagerList[idstr[1]]);
+                if (InventoryManagerList.ContainsKey(idstr[1])) clearWarning(Warning.ID.CargoMissing, idstr[1]);
                 else setWarning(Warning.ID.CargoMissing, idstr[1]);
             }
         }
