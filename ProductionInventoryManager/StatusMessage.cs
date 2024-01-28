@@ -96,7 +96,7 @@ namespace IngameScript
             public override string GetInfoText()
             {
                 errString.Clear();
-                foreach (var o in RefineryList) o.GetRefErrorInfo(errString);
+                foreach (var o in RefineryList) o.GetRefineryErrorInfo(errString);
                 return errString.Length == 0 ? "" : "RefineryManager:\n" + errString.ToString();
             }
         }

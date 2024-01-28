@@ -1,23 +1,14 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using VRage;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRageMath;
-using static IngameScript.Program;
 
 namespace IngameScript
 {
@@ -1718,15 +1709,16 @@ namespace IngameScript
                         }
                 }
                 if (!clr) continue;
-                var idstr = vcon.TypeId.ToString().Split('_');
+                var idstr = vcon.TypeId.ToString().Split('_')[1];
+                var idstrPIM = Ingame2Tag(idstr);
                 var stype = vcon.SubtypeId.ToString();
                 var fullid = idstr[1] + " " + stype;
                 var atype = TypeCast(fullid);
                 if (InventoryManagerList.ContainsKey(fullid)) success = SendItemByNum(quelle, j, InventoryManagerList[fullid]);
                 if (!success && atype != "" && InventoryManagerList.ContainsKey(atype)) success = SendItemByNum(quelle, j, InventoryManagerList[atype]);
-                if (!success && InventoryManagerList.ContainsKey(idstr[1])) success = SendItemByNum(quelle, j, InventoryManagerList[idstr[1]]);
-                if (InventoryManagerList.ContainsKey(idstr[1])) clearWarning(Warning.ID.CargoMissing, idstr[1]);
-                else setWarning(Warning.ID.CargoMissing, idstr[1]);
+                if (!success && InventoryManagerList.ContainsKey(idstr)) success = SendItemByNum(quelle, j, InventoryManagerList[idstr]);
+                if (InventoryManagerList.ContainsKey(idstr)) clearWarning(Warning.ID.CargoMissing, idstrPIM);
+                else setWarning(Warning.ID.CargoMissing, idstrPIM);
             }
         }
         void new_stackcount(IMyInventory quelle, string ti)
@@ -1794,17 +1786,18 @@ namespace IngameScript
         static bool SendItemByTypeAndSubtype(string itemType, string itemSubType, float itemAmount, IMyInventory ziel, int? p = null)
         {
             List<IMyInventory> quellen = null;
-            var idstr = itemType.Split('_');
+            var idstr = itemType.Split('_')[1];
+            var idstrPIM = Ingame2Tag(idstr);
             var atype = TypeCast(idstr[1] + " " + itemSubType);
             if (InventoryManagerList.ContainsKey(idstr[1] + " " + itemSubType)) quellen = InventoryManagerList[idstr[1] + " " + itemSubType];
             else if (atype != "" && InventoryManagerList.ContainsKey(atype)) quellen = InventoryManagerList[atype];
-            else if (InventoryManagerList.ContainsKey(idstr[1])) quellen = InventoryManagerList[idstr[1]];
+            else if (InventoryManagerList.ContainsKey(idstr)) quellen = InventoryManagerList[idstr];
             else
             {
-                setWarning(Warning.ID.CargoMissing, idstr[1]);
+                setWarning(Warning.ID.CargoMissing, idstrPIM);
                 return false;
             }
-            clearWarning(Warning.ID.CargoMissing, idstr[1]);
+            clearWarning(Warning.ID.CargoMissing, idstrPIM);
             for (int i = 0; i < quellen.Count; i++)
             {
                 var von = new List<MyInventoryItem>();
@@ -2416,7 +2409,7 @@ namespace IngameScript
             void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
             void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
             void SetErrorByCondition(RefError error, bool condition) { if (condition) AddRefError(error); else DeleteRefError(error); }
-            public void GetRefErrorInfo(StringBuilder errString)
+            public void GetRefineryErrorInfo(StringBuilder errString)
             {
                 if (!pms.Control() && ErrorList.Count == 0) return;
                 foreach (var error in ErrorList)
@@ -2484,7 +2477,7 @@ namespace IngameScript
                     if (fertig < 50) ClearInputInventoryIfControledByPIM();
                     var types = newworkBP.InputID.Split(' ');
                     if (inventar.ContainsKey(newworkBP.InputID)) refineryFilled = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
-                    if(!refineryFilled) refineryFilled = Erzklau(newworkBP);
+                    if (!refineryFilled) refineryFilled = Erzklau(newworkBP);
                     SetErrorByCondition(RefError.NotFilled, !refineryFilled && InputInventory.CurrentVolume == 0);
                 }
                 if (refineryFilled) SetIngotPrio(ip, newworkBP, cn);
@@ -2683,7 +2676,7 @@ namespace IngameScript
                         }
                     }
                 }
-                Name.Clear() ;
+                Name.Clear();
                 Name.Append(newa.Trim());
                 if (cACd && smscontrol == true) changeAutoCraftingSettings = true;
                 smscontrol = false;
@@ -3095,25 +3088,50 @@ namespace IngameScript
             return w + "| ";
         }
 
+        static Dictionary<string, string> IngameToPIM = new Dictionary<string, string>
+        {
+            { "Ammo",  IG_Ammo },
+            { "Ice",  Ore.Ice},
+            { "Water",  Ingot.WaterFood},
+            { "Deuterium",  Ingot.DeuteriumContainer},
+            { Resources.RStone,  Ore.Stone},
+            { "Gravel",  Ingot.Stone},
+            { "Tools",  IG_Tools},
+            { "Kits",  IG_Kits},
+            { "Cash",  IG_Cash},
+            { "Datapads",  IG_Datas},
+            { "H-Bottles",  IG_HBottles},
+            { "O-Bottles",  IG_OBottles},
+            { "Greywater",  Ingot.GreyWater},
+        };
+
+        static string Ingame2Tag(string ingame)
+        {
+            foreach (var x in IngameToPIM) if (x.Value == ingame) return x.Key;
+            return ingame;
+        }
+
         string Tag2Ingame(string ststr)
         {
             if (ststr.Contains("Dock")) return "";
+            if (IngameToPIM.ContainsKey(ststr)) return IngameToPIM[ststr];
             switch (ststr)
             {
-                case "Deuterium": return Ingot.DeuteriumContainer;
-                case "Ice": return Ore.Ice;
-                case "Water": return Ingot.WaterFood;
-                case "Greywater": return Ingot.GreyWater;
+                //case "Ammo": return IG_Ammo;
+                //case "Ice": return Ore.Ice;
+                //case "Water": return Ingot.WaterFood;
+                //case "Deuterium": return Ingot.DeuteriumContainer;
+                //case "Stone": return Ore.Stone;
+                //case "Gravel": return Ingot.Stone;
+                //case "Tools": return IG_Tools;
+                //case "Kits": return IG_Kits;
+                //case "Cash": return IG_Cash;
+                //case "Datapads": return IG_Datas;
+                //case "H-Bottles": return IG_HBottles;
+                //case "O-Bottles": return IG_OBottles;
+                //case "Greywater": return Ingot.GreyWater;
+
                 case "Organic": return Ore.Organic;
-                case "Stone": return Ore.Stone;
-                case "Gravel": return Ingot.Stone;
-                case "Tools": return IG_Tools;
-                case "Kits": return IG_Kits;
-                case "Cash": return IG_Cash;
-                case "Datapads": return IG_Datas;
-                case "H-Bottles": return IG_HBottles;
-                case "O-Bottles": return IG_OBottles;
-                case "Ammo": return IG_Ammo;
                 case "Steelplate": return IG_Com + "SteelPlate";
                 case "Metalgrid": return IG_Com + "MetalGrid";
                 case "Interiorplate": return IG_Com + "InteriorPlate";
