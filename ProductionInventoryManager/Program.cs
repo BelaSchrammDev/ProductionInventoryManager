@@ -1472,7 +1472,7 @@ namespace IngameScript
                                 clearWarning(Warning.ID.CARGOUSEFULL, c);
                             }
                         }
-                        calcInfos();
+                        CalcutateInfos();
                         firstRun = false;
                         m0 = 0;
                         break;
@@ -3067,12 +3067,14 @@ namespace IngameScript
             }
             return zstr;
         }
+        // runningsign
         int r = 0;
         int rc = 1;
         int mr = 7;
-        string getRunningSign()
+        StringBuilderExtended runningSign = new StringBuilderExtended(10);
+        StringBuilderExtended getRunningSign()
         {
-            var w = "|";
+            runningSign.SetText('|');
             r += rc;
             if (r < 0)
             {
@@ -3084,16 +3086,14 @@ namespace IngameScript
                 r = mr - 1;
                 rc = -1;
             }
-            for (int i = 0; i <= mr; i++) w += i == r ? (rc < 0 ? '<' : '>') : ' ';
-            return w + "| ";
+            for (int i = 0; i <= mr; i++) runningSign.Append(i == r ? (rc < 0 ? '<' : '>') : ' ');
+            runningSign.Append("| ");
+            return runningSign;
         }
-
+        // ----------------------------------------------------------------------------------
         static Dictionary<string, string> IngameToPIM = new Dictionary<string, string>
         {
             { "Ammo",  IG_Ammo },
-            { "Ice",  Ore.Ice},
-            { "Water",  Ingot.WaterFood},
-            { "Deuterium",  Ingot.DeuteriumContainer},
             { Resources.RStone,  Ore.Stone},
             { "Gravel",  Ingot.Stone},
             { "Tools",  IG_Tools},
@@ -3102,7 +3102,11 @@ namespace IngameScript
             { "Datapads",  IG_Datas},
             { "H-Bottles",  IG_HBottles},
             { "O-Bottles",  IG_OBottles},
+            { "Ice",  Ore.Ice},
+            { "Water",  Ingot.WaterFood},
             { "Greywater",  Ingot.GreyWater},
+            { "Deuterium",  Ingot.DeuteriumContainer},
+            { "Organic", Ore.Organic },
         };
 
         static string Ingame2Tag(string ingame)
@@ -3117,21 +3121,6 @@ namespace IngameScript
             if (IngameToPIM.ContainsKey(ststr)) return IngameToPIM[ststr];
             switch (ststr)
             {
-                //case "Ammo": return IG_Ammo;
-                //case "Ice": return Ore.Ice;
-                //case "Water": return Ingot.WaterFood;
-                //case "Deuterium": return Ingot.DeuteriumContainer;
-                //case "Stone": return Ore.Stone;
-                //case "Gravel": return Ingot.Stone;
-                //case "Tools": return IG_Tools;
-                //case "Kits": return IG_Kits;
-                //case "Cash": return IG_Cash;
-                //case "Datapads": return IG_Datas;
-                //case "H-Bottles": return IG_HBottles;
-                //case "O-Bottles": return IG_OBottles;
-                //case "Greywater": return Ingot.GreyWater;
-
-                case "Organic": return Ore.Organic;
                 case "Steelplate": return IG_Com + "SteelPlate";
                 case "Metalgrid": return IG_Com + "MetalGrid";
                 case "Interiorplate": return IG_Com + "InteriorPlate";

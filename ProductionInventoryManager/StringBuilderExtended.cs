@@ -1,22 +1,4 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.ModAPI.Ingame;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using VRage;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRageMath;
+﻿using System.Text;
 
 namespace IngameScript
 {
@@ -24,9 +6,10 @@ namespace IngameScript
     {
         public class StringBuilderExtended
         {
-            private StringBuilder sb;
+            readonly StringBuilder sb;
             public StringBuilderExtended(int size) { sb = new StringBuilder(size); }
             public StringBuilder GetSB() { return sb; }
+            public string GetString() { return sb.ToString(); }
             public override string ToString() { return sb.ToString(); }
             public void Trim()
             {
@@ -59,11 +42,20 @@ namespace IngameScript
                 for (int i = startindex; i <= endindex; i++) targetSB.Append(sb[i]);
             }
             public bool IsEmpty() { return sb.Length == 0; }
+            public void Append(StringBuilderExtended sbx) { sb.Append(sbx.sb); }
             public void Append(string text) { sb.Append(text); }
+            public void Append(char c) { sb.Append(c); }
             public void AppendLF(string text) { Append(text + "\n"); }
             public void AppendLFifNotEmpty(string text) { if (text.Length > 0) AppendLF(text); }
             public void Clear() { sb.Clear(); }
-            public void SetText(string text) { Clear(); Append(text); }
+            public void SetText(string text1, string text2 = "", string text3 = "")
+            {
+                Clear();
+                Append(text1);
+                if (text2 != "") Append(text2);
+                if (text3 != "") Append(text3);
+            }
+            public void SetText(char c) { Clear(); Append(c); }
             public void ToLower() { for (int i = 0; i < sb.Length; i++) sb[i] = char.ToLower(sb[i]); }
             public bool Contains(string s) { return IndexOf(s) != -1; }
             public int IndexOf(string s)

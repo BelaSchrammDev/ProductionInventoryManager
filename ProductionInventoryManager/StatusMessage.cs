@@ -1,22 +1,6 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.ModAPI.Ingame;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
-using VRage;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRageMath;
 
 namespace IngameScript
 {
@@ -31,7 +15,7 @@ namespace IngameScript
             DateTime burn = DateTime.Now;
             public ViewType type = ViewType.NONE;
             int SecondsToLive = -1;
-            string infotext = "";
+            public StringBuilderExtended InfoString = new StringBuilderExtended(100);
             public View()
             {
                 type = ViewType.INFO;
@@ -42,11 +26,11 @@ namespace IngameScript
             }
             public View(string itext, ViewType itype, int sec = -1)
             {
-                infotext = itext;
+                InfoString.SetText(itext);
                 type = itype;
                 SecondsToLive = sec;
             }
-            public virtual string GetInfoText() { return infotext; }
+            public virtual string GetInfoText() { return InfoString.ToString(); }
             public bool IsOver() { if (SecondsToLive == -1) return false; if ((DateTime.Now - burn).TotalSeconds > SecondsToLive) return true; return false; }
             public void SetOver() { SecondsToLive = 0; }
         }
@@ -56,22 +40,32 @@ namespace IngameScript
         }
         class Warning : View
         {
-            public enum ID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, CargoMissing, Incinerator, RefineryNotSupportet }
+            public enum ID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, CargoMissing, RefineryNotSupportet }
             public ID w_ID = ID.NONE;
             public string subType = "";
-            public Warning(ID warn_ID, string isubtype = "") : base(ViewType.WARNING) { w_ID = warn_ID; subType = isubtype; }
-            public override string GetInfoText()
+            public Warning(ID warn_ID, string isubtype = "") : base(ViewType.WARNING)
             {
-                var testsb = new StringBuilder(300);
+                w_ID = warn_ID;
+                subType = isubtype;
+                SetInfoString(isubtype);
+            }
+            void SetInfoString(string subType)
+            {
                 switch (w_ID)
                 {
-                    case ID.RefineryNotSupportet: return "refinery '" + subType + "' not supported.";
-                    case ID.Incinerator: return "incinerator (IOmod) not supported.";
-                    case ID.CargoMissing: return "please define cargo for " + subType + ".";
-                    case ID.CARGOUSEHEAVY: return "cargo with " + subType + " is heavy.";
-                    case ID.CARGOUSEFULL: return "cargo with " + subType + " is full !!!!!";
+                    case ID.RefineryNotSupportet:
+                        InfoString.SetText("refinery '", subType, "' not supported.");
+                        break;
+                    case ID.CargoMissing:
+                        InfoString.SetText("please define cargo for ", subType, ".");
+                        break;
+                    case ID.CARGOUSEHEAVY:
+                        InfoString.SetText("cargo with ", subType, " is heavy.");
+                        break;
+                    case ID.CARGOUSEFULL:
+                        InfoString.SetText("cargo with ", subType, " is full !!!!!");
+                        break;
                 }
-                return "";
             }
         }
         class AmmoManagerInfo : View
@@ -138,7 +132,7 @@ namespace IngameScript
         StringBuilderExtended infoString = new StringBuilderExtended(1000);
         StringBuilderExtended warnungstring = new StringBuilderExtended(500);
         StringBuilderExtended errorstring = new StringBuilderExtended(500);
-        void calcInfos()
+        void CalcutateInfos()
         {
             infoString.SetText("\n");
             warnungstring.Clear();
