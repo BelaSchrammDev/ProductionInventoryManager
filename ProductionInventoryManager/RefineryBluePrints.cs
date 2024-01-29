@@ -1,27 +1,69 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.ModAPI.Ingame;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using VRage;
-using VRage.Collections;
 using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRageMath;
 
 namespace IngameScript
 {
     partial class Program
     {
+        // to be removed ---------------------------------------------------------------------------------
+        void addPrio(string reftype, RefineryBlueprint type, int prio)
+        {
+            if (prio == 0) prio = 1;
+            if (ingotprio.ContainsKey(reftype))
+            {
+                IPrio.GetBlueprintPrio(ingotprio[reftype], type, true).setPrio(prio);
+            }
+        }
+
+
+        static Dictionary<string, List<IPrio>> ingotprio = new Dictionary<string, List<IPrio>>();
+        //Ip
+        public class IPrio : IComparable<IPrio>
+        {
+            public RefineryBlueprint refineryBP;
+            public int prio = 0;
+            public int initp = 0;
+            public int CompareTo(IPrio other)
+            {
+                if (other.initp == initp) return 0;
+                return other.initp > initp ? 1 : -1;
+            }
+            public IPrio(RefineryBlueprint bluePrint, int pr = 0)
+            {
+                refineryBP = bluePrint;
+                prio = pr;
+                initp = pr;
+            }
+            public void setPrio(int np)
+            {
+                if (np > 10000) np = 10000;
+                prio = np;
+                if (np == 0 || initp != np) initp = np;
+            }
+            public static IPrio GetBlueprintPrio(List<IPrio> ingotprioList, RefineryBlueprint bp, bool newip = false)
+            {
+                foreach (IPrio ip in ingotprioList)
+                {
+                    if (ip.refineryBP == bp) return ip;
+                }
+                if (newip)
+                {
+                    IPrio np = new IPrio(bp);
+                    ingotprioList.Add(np);
+                    return np;
+                }
+                else return null;
+            }
+        }
+        // to be removed # end  ---------------------------------------------------------------------------------
+
+
+
+
         static List<RefineryBlueprint> RefineryBlueprints = new List<RefineryBlueprint>();
         static Dictionary<string, Dictionary<RefineryBlueprint, int>> OrePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
 
@@ -163,6 +205,9 @@ namespace IngameScript
             public string ETA_String = "";
             public int RefineryCount = 0;
             public bool IsScrap = false;
+            public int Prio = 0;
+            public int InitPrio = 0;
+
             public RefineryBlueprint(MyDefinitionId iDefinitionID, string iInputID, string iOutputID)
             {
                 Definition_id = iDefinitionID;

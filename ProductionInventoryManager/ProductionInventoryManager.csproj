@@ -50,6 +50,7 @@
     <AdditionalFiles Include="Instructions.readme" />
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
+    <Compile Include="Refinery.cs" />
     <Compile Include="RefineryBluePrints.cs" />
     <Compile Include="StatusMessage.cs" />
     <Compile Include="StringBuilderExtended.cs" />
