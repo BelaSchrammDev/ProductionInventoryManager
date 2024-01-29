@@ -397,9 +397,16 @@ namespace IngameScript
                 var inventoryItems = new List<MyInventoryItem>();
                 var inventory = RefineryBlock.GetInventory(0);
                 inventory.GetItems(inventoryItems);
-                var firstItemPrio = 10000;
+                if (inventoryItems.Count == 0) return;
                 for (int i = 0; i < inventoryItems.Count; i++)
                 {
+                    var inventoryItem = inventoryItems[i];
+                    var itemType = GetPIMItemID(inventoryItem.Type);
+                    var refBP = AcceptedBlueprints.Find(b => b.InputID == itemType);
+                    if (refBP == null) continue;
+                    var itemIPrio = IPrio.GetBlueprintPrio(ingotprio[BlockSubType], refBP);
+                    if (itemIPrio == null) continue;
+
                 }
             }
             void OreSort()

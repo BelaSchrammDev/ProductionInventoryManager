@@ -19,7 +19,6 @@ namespace IngameScript
             }
         }
 
-
         static Dictionary<string, List<IPrio>> ingotprio = new Dictionary<string, List<IPrio>>();
         //Ip
         public class IPrio : IComparable<IPrio>
@@ -62,10 +61,29 @@ namespace IngameScript
         // to be removed # end  ---------------------------------------------------------------------------------
 
 
-
-
         static List<RefineryBlueprint> RefineryBlueprints = new List<RefineryBlueprint>();
         static Dictionary<string, Dictionary<RefineryBlueprint, int>> OrePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
+
+        static void AddRefineryBlueprint(string bpName, string inputItem, string outputItem)
+        {
+            MyDefinitionId id;
+            if (!MyDefinitionId.TryParse("MyObjectBuilder_BlueprintDefinition/" + bpName, out id)) return;
+            if (RefineryBlueprints.Find(b => b.Definition_id == id) == null)
+            {
+                RefineryBlueprints.Add(new RefineryBlueprint(id, inputItem, outputItem));
+            }
+        }
+        static void AddRefineryBlueprintOreToIngot(string resource)
+        {
+            AddRefineryBlueprint(resource + "OreToIngot", "Ore " + resource, "Ingot " + resource);
+        }
+        static void AddRefineryBlueprintsArray(string[] resArray, string bpNamePrefix, string bpNameSuffix, string inputNamePrefix, string outputNamePrefix)
+        {
+            foreach (var bp in resArray)
+            {
+                AddRefineryBlueprint(bpNamePrefix + bp + bpNameSuffix, inputNamePrefix + bp, outputNamePrefix + bp);
+            }
+        }
 
         void InitRefineryBlueprints()
         {
@@ -226,27 +244,6 @@ namespace IngameScript
                 IsScrap = true;
             }
         }
-        static void AddRefineryBlueprint(string bpName, string inputItem, string outputItem)
-        {
-            MyDefinitionId id;
-            if (!MyDefinitionId.TryParse("MyObjectBuilder_BlueprintDefinition/" + bpName, out id)) return;
-            if (RefineryBlueprints.Find(b => b.Definition_id == id) == null)
-            {
-                RefineryBlueprints.Add(new RefineryBlueprint(id, inputItem, outputItem));
-            }
-        }
-        static void AddRefineryBlueprintOreToIngot(string resource)
-        {
-            AddRefineryBlueprint(resource + "OreToIngot", "Ore " + resource, "Ingot " + resource);
-        }
-        static void AddRefineryBlueprintsArray(string[] resArray, string bpNamePrefix, string bpNameSuffix, string inputNamePrefix, string outputNamePrefix)
-        {
-            foreach (var bp in resArray)
-            {
-                AddRefineryBlueprint(bpNamePrefix + bp + bpNameSuffix, inputNamePrefix + bp, outputNamePrefix + bp);
-            }
-        }
-
 
         public class Resources
         {
