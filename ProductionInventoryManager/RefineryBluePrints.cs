@@ -64,6 +64,7 @@ namespace IngameScript
         static List<RefineryBlueprint> RefineryBlueprints = new List<RefineryBlueprint>();
         static Dictionary<string, Dictionary<RefineryBlueprint, int>> OrePrioConfig = new Dictionary<string, Dictionary<RefineryBlueprint, int>>();
 
+
         static void AddRefineryBlueprint(string bpName, string inputItem, string outputItem)
         {
             MyDefinitionId id;
@@ -73,10 +74,14 @@ namespace IngameScript
                 RefineryBlueprints.Add(new RefineryBlueprint(id, inputItem, outputItem));
             }
         }
+
+
         static void AddRefineryBlueprintOreToIngot(string resource)
         {
             AddRefineryBlueprint(resource + "OreToIngot", "Ore " + resource, "Ingot " + resource);
         }
+
+
         static void AddRefineryBlueprintsArray(string[] resArray, string bpNamePrefix, string bpNameSuffix, string inputNamePrefix, string outputNamePrefix)
         {
             foreach (var bp in resArray)
@@ -84,6 +89,7 @@ namespace IngameScript
                 AddRefineryBlueprint(bpNamePrefix + bp + bpNameSuffix, inputNamePrefix + bp, outputNamePrefix + bp);
             }
         }
+
 
         void InitRefineryBlueprints()
         {
@@ -110,22 +116,30 @@ namespace IngameScript
                 AddRefineryBlueprint("IcetoDeuterium", Ore.Ice, Ingot.DeuteriumContainer);
                 AddRefineryBlueprint("DeuteriumOreToIngot", Ore.Deuterium, Ingot.DeuteriumContainer);
             }
+
+
             if (usedMods[M_DailyNeedsSurvival])
             {
                 AddRefineryBlueprintOreToIngot("Carbon");
                 AddRefineryBlueprintOreToIngot("Potassium");
                 AddRefineryBlueprintOreToIngot("Phosphorus");
             }
+
+
             if (usedMods[M_SG_Ores])
             {
                 AddRefineryBlueprintOreToIngot("Naquadah");
                 AddRefineryBlueprintOreToIngot("Trinium");
                 AddRefineryBlueprintOreToIngot("Neutronium");
             }
+
+
             if (!usedMods[M_IndustrialOverhaulMod])
             {
                 AddRefineryBlueprintOreToIngot("Magnesium");
             }
+
+
             else // IndustrialOverhaulMod
             {
                 string[] ioModResources = { "Iron", "Nickel", "Cobalt", "Silicon", "Silver", "Gold", "Platinum", "Uranium", "Copper", "Lithium", "Bauxite", "Titanium", "Tantalum", "Sulfur", };
@@ -163,8 +177,15 @@ namespace IngameScript
             RefineryBlueprints.Sort((x, y) => x.InputIDName.CompareTo(y.InputIDName));
         }
 
+
         public class RefineryBlueprint
         {
+            static DateTime FillTimestamp = DateTime.Now;
+            static string[] ScrapTypeBlueprintNames = { "Component C100ShellCasing", Ore.Scrap, Ingot.Scrap };
+            static MyItemType[] ScrapItemTypes;
+            static Dictionary<MyItemType, RefineryBlueprint> KnowScrapTypes = new Dictionary<MyItemType, RefineryBlueprint>();
+
+
             public static void FillInputOutputAmountAndETA()
             {
                 if ((DateTime.Now - FillTimestamp).TotalSeconds > 12)
@@ -182,10 +203,11 @@ namespace IngameScript
                     }
                 }
             }
-            static DateTime FillTimestamp = DateTime.Now;
-            static string[] ScrapTypeBlueprintNames = { "Component C100ShellCasing", Ore.Scrap, Ingot.Scrap };
-            static MyItemType[] ScrapItemTypes;
-            static Dictionary<MyItemType, RefineryBlueprint> KnowScrapTypes = new Dictionary<MyItemType, RefineryBlueprint>();
+
+
+            public static bool IsKnowScrapType(MyItemType scrapType) { return ScrapItemTypes.Contains(scrapType); }
+
+
             public static RefineryBlueprint GetScrapBlueprintByItemtypeOrCreateNew(MyItemType scrapType)
             {
                 if (!KnowScrapTypes.ContainsKey(scrapType))
@@ -195,10 +217,8 @@ namespace IngameScript
                 }
                 return KnowScrapTypes[scrapType];
             }
-            public static bool IsKnowScrapType(MyItemType scrapType)
-            {
-                return ScrapItemTypes.Contains(scrapType);
-            }
+
+
             public static void InitScrapTypeBlueprintTypes()
             {
                 ScrapItemTypes = new MyItemType[ScrapTypeBlueprintNames.Length];
@@ -210,6 +230,8 @@ namespace IngameScript
                     ScrapItemTypes[i] = newType;
                 }
             }
+
+
             // ----------------------------------------------------------------------------------------------------------------
             public MyDefinitionId Definition_id;
             public string Name = "";
@@ -223,8 +245,7 @@ namespace IngameScript
             public string ETA_String = "";
             public int RefineryCount = 0;
             public bool IsScrap = false;
-            public int Prio = 0;
-            public int InitPrio = 0;
+
 
             public RefineryBlueprint(MyDefinitionId iDefinitionID, string iInputID, string iOutputID)
             {
@@ -236,7 +257,11 @@ namespace IngameScript
                 OutputIDName = CastResourceName(OutputID);
                 IsScrap = ScrapTypeBlueprintNames.Contains(InputID);
             }
-            public RefineryBlueprint(MyItemType iScrapType) // add AWWScrap Ore
+
+
+            // special constructor for blueprints from the AWWScrap mod
+            // the blueprints wont be realtime created and canot be predefined
+            public RefineryBlueprint(MyItemType iScrapType)
             {
                 InputID = GetPIMItemID(iScrapType);
                 InputIDName = iScrapType.SubtypeId;
@@ -244,6 +269,7 @@ namespace IngameScript
                 IsScrap = true;
             }
         }
+
 
         public class Resources
         {
@@ -275,6 +301,7 @@ namespace IngameScript
                 RDeuterium = "Deuterium";
             // public const string R = "";
         }
+
 
         public class Ingot : Resources
         {
@@ -313,6 +340,7 @@ namespace IngameScript
                 Aluminium = prefix + "Aluminium";
             // public const string  = prefix + "";
         }
+
 
         public class Ore : Resources
         {
