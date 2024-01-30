@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
@@ -33,7 +32,7 @@ namespace IngameScript
         static List<storageInventory> storageinvs = new List<storageInventory>();
         List<IMyRefinery> raff = new List<IMyRefinery>();
         List<IMyAssembler> ass = new List<IMyAssembler>();
-        static List<Assembler> okumas = new List<Assembler>();
+        static List<Assembler> AssemblerList = new List<Assembler>();
         List<IMyUserControllableGun> ugun = new List<IMyUserControllableGun>();
         List<IMyTerminalBlock> tbl = new List<IMyTerminalBlock>();
         List<string> collectAll_List = new List<string>();
@@ -1288,13 +1287,13 @@ namespace IngameScript
                         break;
                     case 35:
                         GridTerminalSystem.GetBlocksOfType<IMyAssembler>(ass, block => block.CubeGrid == Me.CubeGrid);
-                        for (int i = okumas.Count - 1; i >= 0; i--)
+                        for (int i = AssemblerList.Count - 1; i >= 0; i--)
                         {
-                            if (ass.Contains(okumas[i].AssemblerBlock)) ass.Remove(okumas[i].AssemblerBlock);
+                            if (ass.Contains(AssemblerList[i].AssemblerBlock)) ass.Remove(AssemblerList[i].AssemblerBlock);
                             else
                             {
                                 changeAutoCraftingSettings = true;
-                                okumas.Remove(okumas[i]);
+                                AssemblerList.Remove(AssemblerList[i]);
                             }
                         }
                         m1 = ass.Count - 1;
@@ -1304,7 +1303,7 @@ namespace IngameScript
                         for (int i = m1; i >= 0; i--, m1--)
                         {
                             if (maxInstructions()) { writeInfo(); return; }
-                            okumas.Add(new Assembler(ass[i]));
+                            AssemblerList.Add(new Assembler(ass[i]));
                         }
                         m0++;
                         break;
@@ -1379,10 +1378,10 @@ namespace IngameScript
                         m0++;
                         break;
                     case 48:
-                        for (int i = m1; i < okumas.Count; i++, m1++)
+                        for (int i = m1; i < AssemblerList.Count; i++, m1++)
                         {
                             if (maxInstructions()) { writeInfo(); return; }
-                            okumas[i].Refresh();
+                            AssemblerList[i].Refresh();
                         }
                         m0++;
                         break;
@@ -1402,7 +1401,7 @@ namespace IngameScript
                             {
                                 if (s0[i] != Ingot.SubFresh)
                                 {
-                                    foreach (var o in okumas) o.AddValidBlueprint(b);
+                                    foreach (var o in AssemblerList) o.AddValidBlueprint(b);
                                 }
                             }
                         }
@@ -1425,15 +1424,15 @@ namespace IngameScript
                     case 53:
                         m1 = 0;
                         m2 = 0;
-                        okumas.Sort();
+                        AssemblerList.Sort();
                         m0++;
                         break;
                     case 54:
-                        for (int i = m1; i < okumas.Count; i++, m1++)
+                        for (int i = m1; i < AssemblerList.Count; i++, m1++)
                         {
                             if (maxInstructions()) { writeInfo(); return; }
-                            var o = okumas[i];
-                            if (o.AssemblerBlock.CubeGrid == Me.CubeGrid && o.pms.Control())
+                            var o = AssemblerList[i];
+                            if (o.AssemblerBlock.CubeGrid == Me.CubeGrid && o.parameter.ControledByPIM())
                             {
                                 if (o.BlueprintList.Count > 0)
                                 {
@@ -1530,8 +1529,8 @@ namespace IngameScript
                 Parameter pm = new Parameter();
                 if (pm.ParseArgs(t.CustomName))
                 {
-                    if (!pm.isPM("Keep")) InventoryList_SMSflagged.Add(inv);
-                    if (!pm.isPM("Infolcd")) addToInventoryList(inv, pm.pml);
+                    if (!pm.IsParameter("Keep")) InventoryList_SMSflagged.Add(inv);
+                    if (!pm.IsParameter("Infolcd")) addToInventoryList(inv, pm.ParameterList);
                 }
                 else if (t.BlockDefinition.SubtypeId.Contains("Container") || t.BlockDefinition.SubtypeId.Contains("Connector"))
                 {
@@ -1691,6 +1690,7 @@ namespace IngameScript
         static void ClearInventory(IMyInventory quelle, List<string> typeID_l = null)
         {
             var von = new List<MyInventoryItem>();
+            // test if block exists
             quelle.GetItems(von);
             if (von.Count() == 0) return;
             for (int j = von.Count() - 1; j >= 0; j--)
@@ -1818,152 +1818,6 @@ namespace IngameScript
                 }
             }
             return false;
-        }
-        public class Assembler : IComparable<Assembler>
-        {
-            int BlueprintCount = 0;
-            public List<AssemblerBluePrint> BlueprintList = new List<AssemblerBluePrint>();
-            public Parameter pms = new Parameter();
-            public IMyAssembler AssemblerBlock;
-            bool outputInventoryNotEmpty = false;
-            StringBuilder errString = new StringBuilder();
-            bool IsSurvivalKit = false;
-            bool RemoveItemMode = false;
-            public Assembler(IMyAssembler a)
-            {
-                AssemblerBlock = a;
-                IsSurvivalKit = a.BlockDefinition.TypeIdString == "SurvivalKit";
-            }
-            public int CompareTo(Assembler other)
-            {
-                if (other.BlueprintCount < BlueprintCount) return 1;
-                else if (other.BlueprintCount > BlueprintCount) return -1;
-                return 0;
-            }
-            public void AddValidBlueprint(AssemblerBluePrint bluePrint)
-            {
-                if (pms.Control() && AssemblerBlock.CanUseBlueprint(bluePrint.definition_id))
-                {
-                    bluePrint.o.Add(this);
-                    bluePrint.NumBluePrintToAssembler++;
-                    BlueprintList.Add(bluePrint);
-                    BlueprintCount++;
-                }
-            }
-            public bool AddBlueprintToQueue(AssemblerBluePrint bluePrint)
-            {
-                if (AssemblerBlock.Mode == MyAssemblerMode.Disassembly) return false;
-                var ret = false;
-                var bpmg = (bluePrint.MaximumItemAmount - bluePrint.CurrentItemAmount - bluePrint.AssemblyAmount);
-                var mg = bpmg / bluePrint.NumBluePrintToAssembler;
-                if (bpmg < 100)
-                {
-                    mg = bpmg;
-                    ret = true;
-                }
-                AssemblerBlock.Repeating = false;
-                try
-                {
-                    if (bluePrint.valid) AssemblerBlock.AddQueueItem(bluePrint.definition_id, (MyFixedPoint)mg);
-                }
-                catch (Exception e)
-                {
-                    bluePrint.valid = false;
-                }
-                return ret;
-            }
-            public StringBuilder GetAssemblerErrorInfo()
-            {
-                errString.Clear();
-                if (outputInventoryNotEmpty) errString.Append(pms.Name + " cannot empty output.\n");
-                return errString;
-            }
-            public void Refresh()
-            {
-                var proditem_list = new List<MyProductionItem>();
-                var bprint_list = new List<AssemblerBluePrint>();
-                if (AssemblerBlock.Mode == MyAssemblerMode.Assembly)
-                {
-                    var outInventory = AssemblerBlock.GetInventory(1);
-                    ClearInventory(outInventory);
-                    outputInventoryNotEmpty = outInventory.CurrentVolume > 0;
-                    AssemblerBlock.GetQueue(proditem_list);
-                    for (int i = proditem_list.Count - 1; i >= 0; i--)
-                    {
-                        var bprint = AddProductionAmount(proditem_list[i]);
-                        if (bprint != null)
-                        {
-                            bprint_list.Add(bprint);
-                        }
-                    }
-                }
-                else ClearInventory(AssemblerBlock.GetInventory(0));
-                if (!pms.ParseArgs(AssemblerBlock.CustomName, true)) return;
-                BlueprintList.Clear();
-                BlueprintCount = 0;
-                if (AssemblerBlock.IsFunctional)
-                {
-                    if (AssemblerBlock.IsQueueEmpty)
-                    {
-                        if (!IsSurvivalKit)
-                        {
-                            if (!assemblers_off || pms.isPM("Nooff")) AssemblerBlock.Enabled = true;
-                            else AssemblerBlock.Enabled = false;
-                        }
-                        if (AssemblerBlock.Mode == MyAssemblerMode.Disassembly) ClearInventory(AssemblerBlock.GetInventory(1));
-                        else ClearInventory(AssemblerBlock.GetInventory(0));
-                    }
-                    else
-                    {
-                        AssemblerBlock.Enabled = true;
-                        if (AssemblerBlock.Mode == MyAssemblerMode.Assembly)
-                        {
-                            if (RemoveItemMode)
-                            {
-                                RemoveItemMode = false;
-                                if (delete_queueItem_if_max)
-                                {
-                                    for (int i = proditem_list.Count - 1; i >= 0; i--)
-                                    {
-                                        var productionItem = proditem_list[i];
-                                        foreach (var bprint in bprint_list)
-                                        {
-                                            if (bprint.definition_id.SubtypeName == productionItem.BlueprintId.SubtypeName
-                                                && bprint.MaximumItemAmount != 0
-                                                && bprint.MaximumItemAmount <= bprint.CurrentItemAmount)
-                                            {
-                                                AssemblerBlock.RemoveQueueItem(i, productionItem.Amount);
-                                                proditem_list.RemoveAt(i);
-                                            }
-                                        }
-
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                RemoveItemMode = true;
-                                AssemblerBluePrint firstBlueprint = proditem_list.Count > 1 ? GetBluePrintByProductionItem(proditem_list[0]) : null;
-                                if (firstBlueprint != null)
-                                {
-                                    for (int i = proditem_list.Count - 1; i > 0; i--)
-                                    {
-                                        var productionItemBlueprint = GetBluePrintByProductionItem(proditem_list[i]);
-                                        if (productionItemBlueprint != null
-                                            && productionItemBlueprint.MaximumItemAmount != 0
-                                            && productionItemBlueprint.ItemPriority > firstBlueprint.ItemPriority)
-                                        {
-                                            // Move
-                                            AssemblerBlock.MoveQueueItemRequest(proditem_list[i].ItemId, 0);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
         class StorageCargo : storageInventory
         {
@@ -2124,99 +1978,6 @@ namespace IngameScript
                 var p = gun.GetProperty(X_UseConveyor);
                 if (p != null && !gun.GetValue<bool>(X_UseConveyor)) gun.ApplyAction(X_UseConveyor);
             }
-        }
-        //PM
-        public class Parameter
-        {
-            public Dictionary<string, string> pml = new Dictionary<string, string>();
-            StringBuilder bcn = new StringBuilder(150);
-            public StringBuilder Name = new StringBuilder(150);
-            bool smscontrol = false;
-            public bool ParseArgs(string newa, bool cACd = false)
-            {
-                if (StringBuilderContains(bcn, newa)) return smscontrol;
-                bcn.Clear();
-                bcn.Append(newa);
-                pml.Clear();
-                var args = bcn.ToString().ToLower();
-                if (args.Contains("(sms"))
-                {
-                    StringBuilderSubstring(bcn, Name, 0, args.IndexOf("(sms"));
-                    StringBuilderTrim(Name);
-                    foreach (var y in args.Split('('))
-                    {
-                        if (y.Contains("sms") && y.Contains(")"))
-                        {
-                            foreach (var s in ToArgStr(y).Split(',', ')'))
-                            {
-                                if (s != "" && s != "Sms")
-                                {
-                                    var x = s.IndexOf(':');
-                                    if (x > -1) addPM(s.Substring(0, x), s.Substring(x + 1));
-                                    else addPM(s);
-                                }
-                            }
-                            if (cACd && smscontrol == false) changeAutoCraftingSettings = true;
-                            smscontrol = true;
-                            return true;
-                        }
-                    }
-                }
-                Name.Clear();
-                Name.Append(newa.Trim());
-                if (cACd && smscontrol == true) changeAutoCraftingSettings = true;
-                smscontrol = false;
-                return false;
-            }
-            public void addPM(string key, string value = "") { if (!isPM(key)) pml.Add(key, value); }
-            public bool isPM(string tag) { return pml.ContainsKey(tag); }
-            public bool Control() { return smscontrol; }
-            void StringBuilderToLower(StringBuilder sb) { for (int i = 0; i < sb.Length; i++) sb[i] = char.ToLower(sb[i]); }
-            bool StringBuilderContains(StringBuilder sb, string s) { return StringBuilderIndexOf(sb, s) != -1; }
-            int StringBuilderIndexOf(StringBuilder sb, string s)
-            {
-                int sIndex = 0;
-                int contains = 0;
-                int findIndex = -1;
-                for (int i = 0; sIndex < s.Length && i < sb.Length && i + (s.Length - sIndex) < sb.Length; i++, sIndex += contains)
-                {
-                    if (sb[i] == s[sIndex])
-                    {
-                        if (contains == 0) findIndex = i;
-                        contains = 1;
-                    }
-                    else { contains = 0; sIndex = 0; findIndex = -1; }
-                }
-                if (sIndex < s.Length - 1) findIndex = -1;
-                return findIndex;
-            }
-            void StringBuilderSubstring(StringBuilder sb, StringBuilder targetSB, int startindex, int lenght = -1)
-            {
-                targetSB.Clear();
-                if (startindex > sb.Length) return;
-                int endindex;
-                if (lenght > 0) endindex = startindex + lenght - 1;
-                else endindex = sb.Length - 1;
-                for (int i = startindex; i <= endindex; i++) targetSB.Append(sb[i]);
-            }
-            void StringBuilderTrim(StringBuilder sb)
-            {
-                int wsFromBegin = 0;
-                int wsFromEnd = 0;
-                for (int i = sb.Length - 1; i >= 0; i--)
-                {
-                    if (char.IsWhiteSpace(sb[i])) wsFromEnd++;
-                    else break;
-                }
-                for (int i = 0; i < sb.Length; i++)
-                {
-                    if (char.IsWhiteSpace(sb[i])) wsFromBegin++;
-                    else break;
-                }
-                sb.Remove(0, wsFromBegin);
-                sb.Remove(sb.Length - wsFromEnd, wsFromEnd);
-            }
-
         }
         //ST
         public class StopWatch

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace IngameScript
 {
@@ -15,7 +14,7 @@ namespace IngameScript
             DateTime burn = DateTime.Now;
             public ViewType type = ViewType.NONE;
             int SecondsToLive = -1;
-            public StringBuilderExtended InfoString = new StringBuilderExtended(100);
+            public StringBuilderExtended InfoString = new StringBuilderExtended(1000);
             public View()
             {
                 type = ViewType.INFO;
@@ -30,7 +29,7 @@ namespace IngameScript
                 type = itype;
                 SecondsToLive = sec;
             }
-            public virtual string GetInfoText() { return InfoString.ToString(); }
+            public virtual StringBuilderExtended GetInfoText() { return InfoString; }
             public bool IsOver() { if (SecondsToLive == -1) return false; if ((DateTime.Now - burn).TotalSeconds > SecondsToLive) return true; return false; }
             public void SetOver() { SecondsToLive = 0; }
         }
@@ -57,7 +56,7 @@ namespace IngameScript
                         InfoString.SetText("refinery '", subType, "' not supported.");
                         break;
                     case ID.CargoMissing:
-                        InfoString.SetText("please define cargo for ", subType, ".");
+                        InfoString.SetText("please define cargo for ", subType, ". [name container like ...(sms,", subType.ToLower(), ")]");
                         break;
                     case ID.CARGOUSEHEAVY:
                         InfoString.SetText("cargo with ", subType, " is heavy.");
@@ -70,38 +69,42 @@ namespace IngameScript
         }
         class AmmoManagerInfo : View
         {
-            public override string GetInfoText()
+            public override StringBuilderExtended GetInfoText()
             {
-                if (guns.Count == 0) return "";
-                return "  AmmoMan.: controls " + guns.Count + " weapons.";
+                if (guns.Count == 0) return null;
+                InfoString.SetText("  AmmoMan.: controls ", guns.Count.ToString(), " weapons.");
+                return InfoString;
             }
         }
         class StorageManagerInfo : View
         {
-            public override string GetInfoText()
+            public override StringBuilderExtended GetInfoText()
             {
-                if (storageCargos.Count == 0) return "";
-                return "StorageMan.: controls " + storageCargos.Count + " containers.";
+                if (storageCargos.Count == 0) return null;
+                InfoString.SetText("StorageMan.: controls ", storageCargos.Count.ToString(), " containers.");
+                return InfoString;
             }
         }
         class RefineryManagerInfo : View
         {
-            StringBuilder errString = new StringBuilder(1000);
-            public override string GetInfoText()
+            public override StringBuilderExtended GetInfoText()
             {
-                errString.Clear();
-                foreach (var o in RefineryList) o.GetRefineryErrorInfo(errString);
-                return errString.Length == 0 ? "" : "RefineryManager:\n" + errString.ToString();
+                InfoString.Clear();
+                foreach (var refinery in RefineryList) refinery.GetErrorInfo(InfoString);
+                if (InfoString.IsEmpty()) return null;
+                InfoString.Insert(0, "RefineryManager:\n");
+                return InfoString;
             }
         }
         class AssemblerManagerInfo : View
         {
-            StringBuilder errString = new StringBuilder(1000);
-            public override string GetInfoText()
+            public override StringBuilderExtended GetInfoText()
             {
-                errString.Clear();
-                foreach (var o in okumas) errString.Append(o.GetAssemblerErrorInfo());
-                return errString.Length == 0 ? "" : "AssemblerManager:\n" + errString.ToString();
+                InfoString.Clear();
+                foreach (var assembler in AssemblerList) assembler.GetErrorInfo(InfoString);
+                if (InfoString.IsEmpty()) return null;
+                InfoString.Insert(0, "AssemblerManager:\n");
+                return InfoString;
             }
         }
         static void setInfo(string warnungstext, int zeit = 10)
@@ -146,8 +149,16 @@ namespace IngameScript
                     case View.ViewType.ERROR: errorstring.AppendLF(v.GetInfoText()); break;
                 }
             }
-            if (!warnungstring.IsEmpty()) infoString.Append("Warning:\n" + warnungstring);
-            if (!errorstring.IsEmpty()) infoString.Append("Errors:\n" + errorstring);
+            if (!warnungstring.IsEmpty())
+            {
+                infoString.Append("Warning:\n");
+                infoString.Append(warnungstring);
+            }
+            if (!errorstring.IsEmpty())
+            {
+                infoString.Append("Errors:\n");
+                infoString.Append(errorstring);
+            }
         }
     }
 }
