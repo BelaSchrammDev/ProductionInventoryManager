@@ -875,10 +875,10 @@ namespace IngameScript
                 {
                     case "flushrefinerys_all":
                         foreach (var o in RefineryList) o.FlushAllInventorys();
-                        setInfo("all (" + RefineryList.Count + ") refinerys flushed.");
+                        SetInfo("all (" + RefineryList.Count + ") refinerys flushed.");
                         break;
                     default:
-                        setInfo("unknow command: \"" + argument + "\"");
+                        SetInfo("unknow command: \"" + argument + "\"");
                         break;
 
                 }
@@ -1452,23 +1452,40 @@ namespace IngameScript
                         break;
                     default:
                         for (int i = viewList.Count - 1; i >= 0; i--) { if (viewList[i].IsOver()) viewList.Remove(viewList[i]); }
+                        // -----------------------
+                        Dictionary<string, string> recommendedItems = new Dictionary<string, string>
+                        {
+                            { Ore.Stone, Resources.RStone },
+                            { Ingot.Stone, "Gravel" },
+                            { Ore.Ice, "Ice" },
+                            { Ingot.WaterFood, "Water" },
+                            { Ingot.GreyWater, "Greywater" },
+                            { Ingot.DeuteriumContainer, "Deuterium" },
+                            { Ore.Organic, "Organic" },
+                        };
+                        foreach (var item in recommendedItems)
+                        {
+                            var condition = (inventar.ContainsKey(item.Key) && inventar[item.Key] > 0 && !InventoryManagerList.ContainsKey(item.Key));
+                            SetWarningByCondition(condition, Warning.ID.CARGORECOMMENDED, item.Value);
+                        }
+                        // -----------------------
                         foreach (var c in CargoUseList.Keys)
                         {
                             var cargoUseRatio = CargoUseList[c].GetCarcocapacityUseRatio();
                             if (cargoUseRatio >= 90)
                             {
-                                setWarning(Warning.ID.CARGOUSEHEAVY, c);
-                                clearWarning(Warning.ID.CARGOUSEFULL, c);
+                                SetWarning(Warning.ID.CARGOUSEHEAVY, c);
+                                ClearWarning(Warning.ID.CARGOUSEFULL, c);
                             }
                             else if (cargoUseRatio >= 99)
                             {
-                                setWarning(Warning.ID.CARGOUSEFULL, c);
-                                clearWarning(Warning.ID.CARGOUSEHEAVY, c);
+                                SetWarning(Warning.ID.CARGOUSEFULL, c);
+                                ClearWarning(Warning.ID.CARGOUSEHEAVY, c);
                             }
                             else
                             {
-                                clearWarning(Warning.ID.CARGOUSEHEAVY, c);
-                                clearWarning(Warning.ID.CARGOUSEFULL, c);
+                                ClearWarning(Warning.ID.CARGOUSEHEAVY, c);
+                                ClearWarning(Warning.ID.CARGOUSEFULL, c);
                             }
                         }
                         CalcutateInfos();
@@ -1690,7 +1707,6 @@ namespace IngameScript
         static void ClearInventory(IMyInventory quelle, List<string> typeID_l = null)
         {
             var von = new List<MyInventoryItem>();
-            // test if block exists
             quelle.GetItems(von);
             if (von.Count() == 0) return;
             for (int j = von.Count() - 1; j >= 0; j--)
@@ -1710,15 +1726,15 @@ namespace IngameScript
                 }
                 if (!clr) continue;
                 var idstr = vcon.TypeId.ToString().Split('_')[1];
-                var idstrPIM = Ingame2Tag(idstr);
                 var stype = vcon.SubtypeId.ToString();
                 var fullid = idstr[1] + " " + stype;
                 var atype = TypeCast(fullid);
+                var idstrPIM = Ingame2Tag(idstr);
                 if (InventoryManagerList.ContainsKey(fullid)) success = SendItemByNum(quelle, j, InventoryManagerList[fullid]);
                 if (!success && atype != "" && InventoryManagerList.ContainsKey(atype)) success = SendItemByNum(quelle, j, InventoryManagerList[atype]);
                 if (!success && InventoryManagerList.ContainsKey(idstr)) success = SendItemByNum(quelle, j, InventoryManagerList[idstr]);
-                if (InventoryManagerList.ContainsKey(idstr)) clearWarning(Warning.ID.CargoMissing, idstrPIM);
-                else setWarning(Warning.ID.CargoMissing, idstrPIM);
+                if (InventoryManagerList.ContainsKey(idstr)) ClearWarning(Warning.ID.CARGOMISSING, idstrPIM);
+                else SetWarning(Warning.ID.CARGOMISSING, idstrPIM);
             }
         }
         void new_stackcount(IMyInventory quelle, string ti)
@@ -1794,10 +1810,10 @@ namespace IngameScript
             else if (InventoryManagerList.ContainsKey(idstr)) quellen = InventoryManagerList[idstr];
             else
             {
-                setWarning(Warning.ID.CargoMissing, idstrPIM);
+                SetWarning(Warning.ID.CARGOMISSING, idstrPIM);
                 return false;
             }
-            clearWarning(Warning.ID.CargoMissing, idstrPIM);
+            ClearWarning(Warning.ID.CARGOMISSING, idstrPIM);
             for (int i = 0; i < quellen.Count; i++)
             {
                 var von = new List<MyInventoryItem>();

@@ -283,7 +283,7 @@ namespace IngameScript
                 }
                 if (typeid.IsUnknowType())
                 {
-                    setWarning(Warning.ID.RefineryNotSupportet, parameter.Name.ToString());
+                    SetWarning(Warning.ID.REFINERYNOTSUPPORTED, parameter.Name.ToString());
                     return;
                 }
                 if (typeid.IsVanillaManagment())
@@ -312,6 +312,18 @@ namespace IngameScript
                 }
             }
 
+            void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
+
+            void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
+
+            void SetErrorByCondition(RefError error, bool condition) { if (condition) AddRefError(error); else DeleteRefError(error); }
+
+            public void FlushAllInventorys() { ClearInventory(InputInventory); ClearInventory(OutputInventory); }
+
+            public bool BlockRemoved() { return RefineryBlock.Closed; }
+
+            public void ClearInputInventoryIfControledByPIM() { if (parameter.ControledByPIM()) ClearInventory(InputInventory); }
+
 
             static Dictionary<RefError, string> RefErrors = new Dictionary<RefError, string>
             {
@@ -320,12 +332,6 @@ namespace IngameScript
                 { RefError.Damaged, " is damaged.\n"},
                 { RefError.IncineratorNoAutofill, " cannot filled by PIM.\n"},
             };
-
-            void AddRefError(RefError error) { if (!ErrorList.Contains(error)) ErrorList.Add(error); }
-
-            void DeleteRefError(RefError error) { if (ErrorList.Contains(error)) ErrorList.Remove(error); }
-
-            void SetErrorByCondition(RefError error, bool condition) { if (condition) AddRefError(error); else DeleteRefError(error); }
 
 
             public void GetErrorInfo(StringBuilderExtended errString)
@@ -337,12 +343,6 @@ namespace IngameScript
                     errString.Append(RefErrors.GetValueOrDefault(error, ": unknown error\n"));
                 }
             }
-
-            public void FlushAllInventorys() { ClearInventory(InputInventory); ClearInventory(OutputInventory); }
-
-            public bool BlockRemoved() { return RefineryBlock.Closed; }
-
-            public void ClearInputInventoryIfControledByPIM() { if (parameter.ControledByPIM()) ClearInventory(InputInventory); }
 
 
             void CalculateRefineryAmount(string bluePrintName)
@@ -394,7 +394,7 @@ namespace IngameScript
             }
 
 
-            void OfenFuellen()
+            void RefineryFilling()
             {
                 bool refineryFilled = false;
                 RefineryBlueprint newworkBP = null;
@@ -407,14 +407,14 @@ namespace IngameScript
                     if (fertig < 50) ClearInputInventoryIfControledByPIM();
                     var types = newworkBP.InputID.Split(' ');
                     if (inventar.ContainsKey(newworkBP.InputID)) refineryFilled = SendItemByTypeAndSubtype("MyObjectBuilder_" + types[0], types[1], inventar[newworkBP.InputID], RefineryBlock.GetInventory(0));
-                    if (!refineryFilled) refineryFilled = Erzklau(newworkBP);
+                    if (!refineryFilled) refineryFilled = OreStealing(newworkBP);
                     SetErrorByCondition(RefError.NotFilled, !refineryFilled && InputInventory.CurrentVolume == 0);
                 }
                 if (refineryFilled) SetIngotPrio(ip, newworkBP, cn);
             }
 
 
-            bool Erzklau(RefineryBlueprint blueprint)
+            bool OreStealing(RefineryBlueprint blueprint)
             {
                 var oamount = 0f;
                 if (blueprint == CurrentWorkBluePrint) oamount = CurrentWorkOreAmount;
@@ -504,7 +504,7 @@ namespace IngameScript
             void VanillaRefineryManager()
             {
                 if (!ingotprio.ContainsKey(BlockSubType)) return;
-                if (fertig > 80 || IfForceManagerExecuting()) OfenFuellen();
+                if (fertig > 80 || IfForceManagerExecuting()) RefineryFilling();
                 if (RMS == ManagerState.CLEAR_INPUT) ClearInput();
                 else if (RMS == ManagerState.SWAP_ORES) OreSwap();
             }
@@ -512,7 +512,6 @@ namespace IngameScript
 
             public bool IfForceManagerExecuting()
             {
-                if (!ingotprio.ContainsKey(BlockSubType)) return false;
                 int wp100 = 0;
                 int op = 0;
                 foreach (IPrio p in ingotprio[BlockSubType])
@@ -520,7 +519,7 @@ namespace IngameScript
                     if (p.refineryBP == CurrentWorkBluePrint || p.refineryBP == NextWorkBluePrint) op = op < p.prio ? (int)(p.prio * 1.5) : op;
                     else if (wp100 == 0 && Accept(p.refineryBP)) wp100 = p.prio;
                 }
-                return op < wp100 ? true : false;
+                return op < wp100;
             }
 
 

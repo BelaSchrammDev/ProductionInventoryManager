@@ -10,7 +10,7 @@ namespace IngameScript
         abstract class View
         {
             public const string Color_Red = "[Color=#FFFF0000]", Color_Yellow = "[Color=#FF000000]", Color_End = "[/Color]";
-            public enum ViewType { NONE, INFO, WARNING, ERROR }
+            public enum ViewType { NONE, INFO, WARNING }
             DateTime burn = DateTime.Now;
             public ViewType type = ViewType.NONE;
             int SecondsToLive = -1;
@@ -33,58 +33,75 @@ namespace IngameScript
             public bool IsOver() { if (SecondsToLive == -1) return false; if ((DateTime.Now - burn).TotalSeconds > SecondsToLive) return true; return false; }
             public void SetOver() { SecondsToLive = 0; }
         }
+
+
         class Info : View
         {
             public Info(string text, int sec = -1) : base(text, ViewType.INFO, sec) { }
         }
+
+
         class Warning : View
         {
-            public enum ID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, CargoMissing, RefineryNotSupportet }
+            public enum ID { NONE, CARGOUSEHEAVY, CARGOUSEFULL, CARGOMISSING, CARGORECOMMENDED, REFINERYNOTSUPPORTED }
             public ID w_ID = ID.NONE;
             public string subType = "";
+
+
             public Warning(ID warn_ID, string isubtype = "") : base(ViewType.WARNING)
             {
                 w_ID = warn_ID;
                 subType = isubtype;
                 SetInfoString(isubtype);
             }
+
+
             void SetInfoString(string subType)
             {
                 switch (w_ID)
                 {
-                    case ID.RefineryNotSupportet:
-                        InfoString.SetText("refinery '", subType, "' not supported.");
+                    case ID.REFINERYNOTSUPPORTED:
+                        InfoString.SetText("! refinery '", subType, "' not supported.");
                         break;
-                    case ID.CargoMissing:
-                        InfoString.SetText("please define cargo for ", subType, ". [name container like ...(sms,", subType.ToLower(), ")]");
+                    case ID.CARGORECOMMENDED:
+                        InfoString.SetText("   - ", subType, " found. you can define cargo for it with ...(sms,", subType.ToLower(), ")");
+                        break;
+                    case ID.CARGOMISSING:
+                        InfoString.SetText("!! please define cargo for ", subType, ". name container like ...(sms,", subType.ToLower(), ")");
                         break;
                     case ID.CARGOUSEHEAVY:
-                        InfoString.SetText("cargo with ", subType, " is heavy.");
+                        InfoString.SetText("!!! cargo with ", subType, " is heavy.");
                         break;
                     case ID.CARGOUSEFULL:
-                        InfoString.SetText("cargo with ", subType, " is full !!!!!");
+                        InfoString.SetText("!!!! cargo with ", subType, " is full !!!!!");
                         break;
                 }
             }
         }
+
+
         class AmmoManagerInfo : View
         {
             public override StringBuilderExtended GetInfoText()
             {
                 if (guns.Count == 0) return null;
-                InfoString.SetText("  AmmoMan.: controls ", guns.Count.ToString(), " weapons.");
+                InfoString.SetText("AmmonitionManager: ", guns.Count.ToString(), " weapons.");
                 return InfoString;
             }
         }
+
+
         class StorageManagerInfo : View
         {
             public override StringBuilderExtended GetInfoText()
             {
                 if (storageCargos.Count == 0) return null;
-                InfoString.SetText("StorageMan.: controls ", storageCargos.Count.ToString(), " containers.");
+                InfoString.SetText("StorageManager: ", storageCargos.Count.ToString(), " containers.");
                 return InfoString;
             }
         }
+
+
         class RefineryManagerInfo : View
         {
             public override StringBuilderExtended GetInfoText()
@@ -92,10 +109,12 @@ namespace IngameScript
                 InfoString.Clear();
                 foreach (var refinery in RefineryList) refinery.GetErrorInfo(InfoString);
                 if (InfoString.IsEmpty()) return null;
-                InfoString.Insert(0, "RefineryManager:\n");
+                InfoString.Insert(0, "--------------- RefineryManager ---------------\n");
                 return InfoString;
             }
         }
+
+
         class AssemblerManagerInfo : View
         {
             public override StringBuilderExtended GetInfoText()
@@ -103,61 +122,70 @@ namespace IngameScript
                 InfoString.Clear();
                 foreach (var assembler in AssemblerList) assembler.GetErrorInfo(InfoString);
                 if (InfoString.IsEmpty()) return null;
-                InfoString.Insert(0, "AssemblerManager:\n");
+                InfoString.Insert(0, "--------------- AssemblerManager ----------------\n");
                 return InfoString;
             }
         }
-        static void setInfo(string warnungstext, int zeit = 10)
+
+
+        static void SetInfo(string warnungstext, int zeit = 10)
         {
             viewList.Add(new Info(warnungstext, zeit));
         }
-        static void setWarning(Warning.ID warnID, string subtype = "")
+
+
+        static void SetWarningByCondition(bool condition, Warning.ID warnID, string subtype = "")
         {
-            if (getWarning(warnID, subtype) == null) viewList.Add(new Warning(warnID, subtype));
+            if (condition) SetWarning(warnID, subtype);
+            else ClearWarning(warnID, subtype);
         }
-        static Warning getWarning(Warning.ID warnID, string subtype)
+
+
+        static void SetWarning(Warning.ID warnID, string subtype = "")
+        {
+            if (GetWarning(warnID, subtype) == null) viewList.Add(new Warning(warnID, subtype));
+        }
+
+
+        static Warning GetWarning(Warning.ID warnID, string subtype)
         {
             foreach (var v in viewList)
             {
-                if (v is Warning)
-                {
-                    var w = v as Warning;
-                    if ((w.w_ID == warnID) && w.subType == subtype) return w;
-                }
+                if (!(v is Warning)) continue;
+                var w = v as Warning;
+                if ((w.w_ID == warnID) && w.subType == subtype) return w;
             }
             return null;
         }
-        static void clearWarning(Warning.ID warnID, string subtype)
+
+
+        static void ClearWarning(Warning.ID warnID, string subtype)
         {
-            var w = getWarning(warnID, subtype);
+            var w = GetWarning(warnID, subtype);
             if (w != null) w.SetOver();
         }
-        StringBuilderExtended infoString = new StringBuilderExtended(1000);
-        StringBuilderExtended warnungstring = new StringBuilderExtended(500);
-        StringBuilderExtended errorstring = new StringBuilderExtended(500);
+
+
+        StringBuilderExtended infoString = new StringBuilderExtended(2000);
+        StringBuilderExtended warnungstring = new StringBuilderExtended(1000);
+
+
         void CalcutateInfos()
         {
             infoString.SetText("\n");
             warnungstring.Clear();
-            errorstring.Clear();
             foreach (var v in viewList)
             {
                 switch (v.type)
                 {
                     case View.ViewType.INFO: infoString.AppendLFifNotEmpty(v.GetInfoText()); break;
                     case View.ViewType.WARNING: warnungstring.AppendLF(v.GetInfoText()); break;
-                    case View.ViewType.ERROR: errorstring.AppendLF(v.GetInfoText()); break;
                 }
             }
             if (!warnungstring.IsEmpty())
             {
-                infoString.Append("Warning:\n");
+                infoString.Append("\n--------------------- Hints ---------------------\n");
                 infoString.Append(warnungstring);
-            }
-            if (!errorstring.IsEmpty())
-            {
-                infoString.Append("Errors:\n");
-                infoString.Append(errorstring);
             }
         }
     }
