@@ -1727,12 +1727,13 @@ namespace IngameScript
                 if (!clr) continue;
                 var idstr = vcon.TypeId.ToString().Split('_')[1];
                 var stype = vcon.SubtypeId.ToString();
-                var fullid = idstr[1] + " " + stype;
+                var fullid = idstr + " " + stype;
                 var atype = TypeCast(fullid);
-                var idstrPIM = Ingame2Tag(idstr);
                 if (InventoryManagerList.ContainsKey(fullid)) success = SendItemByNum(quelle, j, InventoryManagerList[fullid]);
                 if (!success && atype != "" && InventoryManagerList.ContainsKey(atype)) success = SendItemByNum(quelle, j, InventoryManagerList[atype]);
                 if (!success && InventoryManagerList.ContainsKey(idstr)) success = SendItemByNum(quelle, j, InventoryManagerList[idstr]);
+
+                var idstrPIM = Ingame2Tag(idstr);
                 if (InventoryManagerList.ContainsKey(idstr)) ClearWarning(Warning.ID.CARGOMISSING, idstrPIM);
                 else SetWarning(Warning.ID.CARGOMISSING, idstrPIM);
             }
